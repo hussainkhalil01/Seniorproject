@@ -136,15 +136,34 @@ class _MessageWidgetState extends State<MessageWidget> {
             await UsersRecord.getDocumentOnce(recipientRef);
         final targetLang = recipientDoc.preferredLanguage;
         if (targetLang.isNotEmpty) {
-          final translated =
-              await _translateText(_model.messageTemp, targetLang);
-          if (translated != null && translated.isNotEmpty) {
-            translationToStore = translated;
+          final hasArabic = _model.messageTemp.runes
+              .any((r) => r >= 0x0600 && r <= 0x06FF);
+          final sourceLang = hasArabic ? 'ar' : 'en';
+
+          if (sourceLang != targetLang) {
+            // Run spell correction and translation concurrently
+            final spellFuture = (!hasArabic)
+                ? _correctSpelling(_model.messageTemp)
+                : Future<String?>.value(null);
+            final corrected = await spellFuture;
+            final textToTranslate =
+                (corrected != null && corrected.isNotEmpty)
+                    ? corrected
+                    : _model.messageTemp;
+            final translated =
+                await _translateText(textToTranslate, targetLang);
+            if (translated != null && translated.isNotEmpty) {
+              translationToStore = translated;
+            }
+          } else {
+            // Same language — show spell correction only
+            translationToStore =
+                await _correctSpelling(_model.messageTemp);
           }
         }
       }
     } catch (_) {
-      // Translation failed; send original text only
+      // Failed; send original text only
     }
 
     await ChatMessagesRecord.collection.doc().set(createChatMessagesRecordData(
@@ -167,9 +186,17 @@ class _MessageWidgetState extends State<MessageWidget> {
 
   Future<String?> _translateText(String text, String targetLang) async {
     try {
+      // Detect source language by checking for Arabic script characters.
+      // This covers the main cases: Arabic <-> English.
+      final hasArabic = text.runes.any((r) => r >= 0x0600 && r <= 0x06FF);
+      final sourceLang = hasArabic ? 'ar' : 'en';
+
+      // Don't translate if source == target
+      if (sourceLang == targetLang) return null;
+
       final uri = Uri.parse(
         'https://api.mymemory.translated.net/get'
-        '?q=${Uri.encodeQueryComponent(text)}&langpair=autodetect|$targetLang',
+        '?q=${Uri.encodeQueryComponent(text)}&langpair=$sourceLang|$targetLang',
       );
       final response =
           await http.get(uri).timeout(const Duration(seconds: 5));
@@ -177,7 +204,64 @@ class _MessageWidgetState extends State<MessageWidget> {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
         final translated =
             body['responseData']?['translatedText'] as String?;
+        if (translated == null || translated.isEmpty) return null;
+        // Only reject all-caps ASCII error strings (e.g. "PLEASE SELECT TWO DISTINCT LANGUAGES").
+        // Arabic and other scripts have no case so we must NOT apply the uppercase check to them.
+        final isAllCapsLatinError = RegExp(r'^[A-Z\s]+$').hasMatch(translated);
+        if (isAllCapsLatinError) return null;
         return translated;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<String?> _correctSpelling(String text) async {
+    try {
+      final hasArabic =
+          text.runes.any((r) => r >= 0x0600 && r <= 0x06FF);
+      // Use explicit language codes for better accuracy
+      final langCode = hasArabic ? 'ar' : 'en-US';
+
+      final response = await http
+          .post(
+            Uri.parse('https://api.languagetool.org/v2/check'),
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body:
+                'language=$langCode&text=${Uri.encodeQueryComponent(text)}',
+          )
+          .timeout(const Duration(seconds: 6));
+
+      if (response.statusCode == 200) {
+        final body =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        final matches =
+            (body['matches'] as List<dynamic>? ?? []);
+        if (matches.isEmpty) return null;
+
+        // Apply corrections from end to start to preserve offsets
+        String corrected = text;
+        for (final match in matches.reversed) {
+          final offset = match['offset'] as int;
+          final length = match['length'] as int;
+          final replacements =
+              match['replacements'] as List<dynamic>? ?? [];
+          if (replacements.isEmpty) continue;
+          final replacement =
+              (replacements.first['value'] as String?) ?? '';
+          // Skip pure capitalisation changes (e.g. "nam" → "Nam")
+          // Only apply real spelling/grammar fixes
+          if (replacement.toLowerCase() ==
+              text.substring(offset, offset + length).toLowerCase()) {
+            continue;
+          }
+          corrected = corrected.substring(0, offset) +
+              replacement +
+              corrected.substring(offset + length);
+        }
+        if (corrected == text) return null;
+        return corrected;
       }
     } catch (_) {}
     return null;

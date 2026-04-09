@@ -1,7 +1,6 @@
-import '/flutter_flow/flutter_flow_icon_button.dart';
+import '/auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
@@ -28,10 +27,8 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => EditpasswordModel());
-
     _model.textController1 ??= TextEditingController();
     _model.textFieldFocusNode1 ??= FocusNode();
-
     _model.textController2 ??= TextEditingController();
     _model.textFieldFocusNode2 ??= FocusNode();
   }
@@ -39,8 +36,54 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
   @override
   void dispose() {
     _model.dispose();
-
     super.dispose();
+  }
+
+  InputDecoration _fieldDecoration(
+      BuildContext context, String label, IconData icon, bool visible,
+      VoidCallback onToggle) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.ubuntu(
+        color: FlutterFlowTheme.of(context).secondaryText,
+        fontSize: 14,
+      ),
+      prefixIcon: Icon(icon,
+          color: FlutterFlowTheme.of(context).secondaryText, size: 20),
+      suffixIcon: InkWell(
+        onTap: onToggle,
+        focusNode: FocusNode(skipTraversal: true),
+        child: Icon(
+          visible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+          color: FlutterFlowTheme.of(context).secondaryText,
+          size: 20,
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderSide:
+            BorderSide(color: FlutterFlowTheme.of(context).accent4, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(
+            color: FlutterFlowTheme.of(context).primary, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderSide:
+            BorderSide(color: FlutterFlowTheme.of(context).error, width: 1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderSide:
+            BorderSide(color: FlutterFlowTheme.of(context).error, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      filled: true,
+      fillColor: FlutterFlowTheme.of(context).primaryBackground,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
   }
 
   @override
@@ -52,419 +95,306 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: const Color(0xFF111417),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF111417),
-          automaticallyImplyLeading: false,
-          leading: FlutterFlowIconButton(
-            borderRadius: 20.0,
-            buttonSize: 40.0,
-            icon: const Icon(
-              Icons.arrow_back_rounded,
-              color: Colors.white,
-              size: 24.0,
-            ),
-            onPressed: () => context.pop(),
-          ),
-          title: Text(
-            'Change Password',
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.ubuntu(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  color: Colors.white,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
+        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        body: Column(
+          children: [
+            // ── Gradient header ──────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    FlutterFlowTheme.of(context).primary,
+                    FlutterFlowTheme.of(context).secondary,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-          ),
-          actions: const [],
-          centerTitle: true,
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: Form(
-            key: _model.formKey,
-            autovalidateMode: AutovalidateMode.disabled,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(24.0, 40.0, 24.0, 24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 8.0),
-                    child: Text(
-                      'Update Your Password',
-                      style:
-                          FlutterFlowTheme.of(context).headlineMedium.override(
-                                font: GoogleFonts.ubuntu(
-                                  fontWeight: FontWeight.bold,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .headlineMedium
-                                      .fontStyle,
-                                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 28),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.arrow_back_rounded,
+                            color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Change Password',
+                              style: GoogleFonts.ubuntu(
                                 color: Colors.white,
-                                letterSpacing: 0.0,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                fontStyle: FlutterFlowTheme.of(context)
-                                    .headlineMedium
-                                    .fontStyle,
                               ),
-                    ),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 40.0),
-                    child: Text(
-                      'Enter your new password below to secure your account.',
-                      style: FlutterFlowTheme.of(context).bodyMedium.override(
-                            font: GoogleFonts.ubuntu(
-                              fontWeight: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .fontStyle,
                             ),
-                            color: const Color(0xFFCCCCCC),
-                            letterSpacing: 0.0,
-                            fontWeight: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .fontWeight,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .fontStyle,
-                            lineHeight: 1.4,
-                          ),
-                    ),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 24.0),
-                    child: TextFormField(
-                      controller: _model.textController1,
-                      focusNode: _model.textFieldFocusNode1,
-                      autofocus: false,
-                      textInputAction: TextInputAction.next,
-                      obscureText: !_model.passwordVisibility1,
-                      decoration: InputDecoration(
-                        labelText: 'New Password',
-                        labelStyle:
-                            FlutterFlowTheme.of(context).bodyMedium.override(
-                                  font: GoogleFonts.ubuntu(
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontStyle,
-                                  ),
-                                  color: Colors.white,
-                                  letterSpacing: 0.0,
-                                  fontWeight: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontWeight,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontStyle,
-                                ),
-                        hintText: 'New Password',
-                        hintStyle:
-                            FlutterFlowTheme.of(context).bodyMedium.override(
-                                  font: GoogleFonts.ubuntu(
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontStyle,
-                                  ),
-                                  color: const Color(0xFF888888),
-                                  letterSpacing: 0.0,
-                                  fontWeight: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontWeight,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontStyle,
-                                ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Color(0xFF333333),
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).primary,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).error,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).error,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1A1D23),
-                        contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                            16.0, 16.0, 16.0, 16.0),
-                        suffixIcon: InkWell(
-                          onTap: () async {
-                            safeSetState(() => _model.passwordVisibility1 =
-                                !_model.passwordVisibility1);
-                          },
-                          focusNode: FocusNode(skipTraversal: true),
-                          child: Icon(
-                            _model.passwordVisibility1
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: const Color(0xFF888888),
-                            size: 20.0,
-                          ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Keep your account secure',
+                              style: GoogleFonts.ubuntu(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      style: FlutterFlowTheme.of(context).bodyMedium.override(
-                            font: GoogleFonts.ubuntu(
-                              fontWeight: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .fontStyle,
-                            ),
-                            color: Colors.white,
-                            fontSize: 16.0,
-                            letterSpacing: 0.0,
-                            fontWeight: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .fontWeight,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .fontStyle,
-                          ),
-                      cursorColor: Colors.white,
-                      validator:
-                          _model.textController1Validator.asValidator(context),
-                    ),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 40.0),
-                    child: TextFormField(
-                      controller: _model.textController2,
-                      focusNode: _model.textFieldFocusNode2,
-                      autofocus: false,
-                      textInputAction: TextInputAction.done,
-                      obscureText: !_model.passwordVisibility2,
-                      decoration: InputDecoration(
-                        labelText: 'Confirm New Password',
-                        labelStyle:
-                            FlutterFlowTheme.of(context).bodyMedium.override(
-                                  font: GoogleFonts.ubuntu(
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontStyle,
-                                  ),
-                                  color: Colors.white,
-                                  letterSpacing: 0.0,
-                                  fontWeight: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontWeight,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontStyle,
-                                ),
-                        hintText: 'Confirm New Password',
-                        hintStyle:
-                            FlutterFlowTheme.of(context).bodyMedium.override(
-                                  font: GoogleFonts.ubuntu(
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontStyle,
-                                  ),
-                                  color: const Color(0xFF888888),
-                                  letterSpacing: 0.0,
-                                  fontWeight: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontWeight,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontStyle,
-                                ),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: const BorderSide(
-                            color: Color(0xFF333333),
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(12.0),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          shape: BoxShape.circle,
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).primary,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).error,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).error,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1A1D23),
-                        contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                            16.0, 16.0, 16.0, 16.0),
-                        suffixIcon: InkWell(
-                          onTap: () async {
-                            safeSetState(() => _model.passwordVisibility2 =
-                                !_model.passwordVisibility2);
-                          },
-                          focusNode: FocusNode(skipTraversal: true),
-                          child: Icon(
-                            _model.passwordVisibility2
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            color: const Color(0xFF888888),
-                            size: 20.0,
-                          ),
-                        ),
+                        child: const Icon(Icons.lock_outline_rounded,
+                            color: Colors.white, size: 22),
                       ),
-                      style: FlutterFlowTheme.of(context).bodyMedium.override(
-                            font: GoogleFonts.ubuntu(
-                              fontWeight: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .fontStyle,
-                            ),
-                            color: Colors.white,
-                            fontSize: 16.0,
-                            letterSpacing: 0.0,
-                            fontWeight: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .fontWeight,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .fontStyle,
-                          ),
-                      cursorColor: Colors.white,
-                      validator:
-                          _model.textController2Validator.asValidator(context),
-                    ),
+                    ],
                   ),
-                  Container(
-                    width: double.infinity,
-                    height: 56.0,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-                        stops: [0.0, 1.0],
-                        begin: AlignmentDirectional(1.0, -1.0),
-                        end: AlignmentDirectional(-1.0, 1.0),
-                      ),
-                      borderRadius: BorderRadius.circular(12.0),
-                    ),
-                    child: FFButtonWidget(
-                      onPressed: () {
-                        print('Button pressed ...');
-                      },
-                      text: 'Update Password',
-                      options: FFButtonOptions(
-                        width: double.infinity,
-                        height: 56.0,
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                            24.0, 0.0, 24.0, 0.0),
-                        iconPadding:
-                            const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                        color: Colors.transparent,
-                        textStyle:
-                            FlutterFlowTheme.of(context).titleMedium.override(
-                                  font: GoogleFonts.ubuntu(
-                                    fontWeight: FontWeight.w600,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontStyle,
-                                  ),
-                                  color: Colors.white,
-                                  fontSize: 18.0,
-                                  letterSpacing: 0.0,
-                                  fontWeight: FontWeight.w600,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .titleMedium
-                                      .fontStyle,
-                                ),
-                        elevation: 0.0,
-                        borderSide: const BorderSide(
-                          color: Colors.transparent,
-                        ),
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsetsDirectional.fromSTEB(0.0, 24.0, 0.0, 0.0),
-                    child: Text(
-                      'Make sure your password is at least 8 characters long and includes a mix of letters, numbers, and symbols.',
-                      textAlign: TextAlign.center,
-                      style: FlutterFlowTheme.of(context).bodySmall.override(
-                            font: GoogleFonts.ubuntu(
-                              fontWeight: FlutterFlowTheme.of(context)
-                                  .bodySmall
-                                  .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodySmall
-                                  .fontStyle,
-                            ),
-                            color: const Color(0xFF888888),
-                            letterSpacing: 0.0,
-                            fontWeight: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .fontWeight,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .fontStyle,
-                            lineHeight: 1.4,
-                          ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
+
+            // ── Form card ────────────────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding:
+                    const EdgeInsets.fromLTRB(16, 24, 16, 32),
+                child: Form(
+                  key: _model.formKey,
+                  autovalidateMode: AutovalidateMode.disabled,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x0D000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Section header
+                        Row(
+                          children: [
+                            Icon(Icons.security_rounded,
+                                color: FlutterFlowTheme.of(context).primary,
+                                size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'New Password',
+                              style: GoogleFonts.ubuntu(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color:
+                                    FlutterFlowTheme.of(context).primaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Divider(
+                            height: 1,
+                            color: FlutterFlowTheme.of(context).accent4),
+                        const SizedBox(height: 20),
+
+                        // New password field
+                        TextFormField(
+                          controller: _model.textController1,
+                          focusNode: _model.textFieldFocusNode1,
+                          textInputAction: TextInputAction.next,
+                          obscureText: !_model.passwordVisibility1,
+                          style: GoogleFonts.ubuntu(
+                            color: FlutterFlowTheme.of(context).primaryText,
+                            fontSize: 15,
+                          ),
+                          decoration: _fieldDecoration(
+                            context,
+                            'New Password',
+                            Icons.lock_outline_rounded,
+                            _model.passwordVisibility1,
+                            () => safeSetState(() => _model
+                                .passwordVisibility1 =
+                                !_model.passwordVisibility1),
+                          ),
+                          validator:
+                              _model.textController1Validator.asValidator(context),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Confirm password field
+                        TextFormField(
+                          controller: _model.textController2,
+                          focusNode: _model.textFieldFocusNode2,
+                          textInputAction: TextInputAction.done,
+                          obscureText: !_model.passwordVisibility2,
+                          style: GoogleFonts.ubuntu(
+                            color: FlutterFlowTheme.of(context).primaryText,
+                            fontSize: 15,
+                          ),
+                          decoration: _fieldDecoration(
+                            context,
+                            'Confirm New Password',
+                            Icons.lock_reset_rounded,
+                            _model.passwordVisibility2,
+                            () => safeSetState(() => _model
+                                .passwordVisibility2 =
+                                !_model.passwordVisibility2),
+                          ),
+                          validator:
+                              _model.textController2Validator.asValidator(context),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Update button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final newPassword =
+                                  _model.textController1.text.trim();
+                              final confirmPassword =
+                                  _model.textController2.text.trim();
+
+                              if (newPassword.isEmpty ||
+                                  confirmPassword.isEmpty) {
+                                ScaffoldMessenger.of(context)
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(SnackBar(
+                                    content: Text('Please fill in both fields.',
+                                        style: GoogleFonts.ubuntu()),
+                                    backgroundColor:
+                                        FlutterFlowTheme.of(context).error,
+                                  ));
+                                return;
+                              }
+                              if (newPassword.length < 8) {
+                                ScaffoldMessenger.of(context)
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(SnackBar(
+                                    content: Text(
+                                        'Password must be at least 8 characters.',
+                                        style: GoogleFonts.ubuntu()),
+                                    backgroundColor:
+                                        FlutterFlowTheme.of(context).error,
+                                  ));
+                                return;
+                              }
+                              if (newPassword != confirmPassword) {
+                                ScaffoldMessenger.of(context)
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(SnackBar(
+                                    content: Text('Passwords do not match.',
+                                        style: GoogleFonts.ubuntu()),
+                                    backgroundColor:
+                                        FlutterFlowTheme.of(context).error,
+                                  ));
+                                return;
+                              }
+
+                              try {
+                                await authManager.updatePassword(
+                                  newPassword: newPassword,
+                                  context: context,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                    ..hideCurrentSnackBar()
+                                    ..showSnackBar(SnackBar(
+                                      content: Text('Password updated!',
+                                          style: GoogleFonts.ubuntu()),
+                                      backgroundColor:
+                                          const Color(0xFF4CAF50),
+                                      duration: const Duration(seconds: 2),
+                                    ));
+                                  context.pop();
+                                }
+                              } catch (_) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                    ..hideCurrentSnackBar()
+                                    ..showSnackBar(SnackBar(
+                                      content: Text(
+                                          'Failed to update password. Please try again.',
+                                          style: GoogleFonts.ubuntu()),
+                                      backgroundColor:
+                                          FlutterFlowTheme.of(context).error,
+                                    ));
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.check_rounded,
+                                color: Colors.white, size: 20),
+                            label: Text(
+                              'Update Password',
+                              style: GoogleFonts.ubuntu(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  FlutterFlowTheme.of(context).primary,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Hint text
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.info_outline_rounded,
+                                size: 14,
+                                color: FlutterFlowTheme.of(context)
+                                    .secondaryText),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'At least 8 characters with a mix of letters, numbers, and symbols.',
+                                style: GoogleFonts.ubuntu(
+                                  fontSize: 12,
+                                  color: FlutterFlowTheme.of(context)
+                                      .secondaryText,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+
