@@ -56,7 +56,8 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       await authManager.refreshUser();
       await actions.trackUserPresence();
-      if (currentUserEmailVerified) {
+      if (currentUserEmailVerified ||
+          currentUserDocument?.role == 'service_provider') {
         return;
       }
 
@@ -347,47 +348,47 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           },
                         ),
                         _HomeCategory(
-                          label: 'Plumber',
+                          label: 'HVAC (Air Conditioning)',
                           selected:
-                              FFAppState().selectedCategory == 'Plumber',
+                              FFAppState().selectedCategory == 'HVAC (Air Conditioning)',
                           onTap: () {
-                            FFAppState().selectedCategory = 'Plumber';
+                            FFAppState().selectedCategory = 'HVAC (Air Conditioning)';
                             safeSetState(() {});
                           },
                         ),
                         _HomeCategory(
-                          label: 'Electrician',
+                          label: 'Electrical Services',
                           selected:
-                              FFAppState().selectedCategory == 'Electrician',
+                              FFAppState().selectedCategory == 'Electrical Services',
                           onTap: () {
-                            FFAppState().selectedCategory = 'Electrician';
+                            FFAppState().selectedCategory = 'Electrical Services';
                             safeSetState(() {});
                           },
                         ),
                         _HomeCategory(
-                          label: 'Painter',
+                          label: 'Plumbing',
                           selected:
-                              FFAppState().selectedCategory == 'Painter',
+                              FFAppState().selectedCategory == 'Plumbing',
                           onTap: () {
-                            FFAppState().selectedCategory = 'Painter';
+                            FFAppState().selectedCategory = 'Plumbing';
                             safeSetState(() {});
                           },
                         ),
                         _HomeCategory(
-                          label: 'Tree Service',
+                          label: 'General Construction & Renovation',
                           selected:
-                              FFAppState().selectedCategory == 'Tree Service',
+                              FFAppState().selectedCategory == 'General Construction & Renovation',
                           onTap: () {
-                            FFAppState().selectedCategory = 'Tree Service';
+                            FFAppState().selectedCategory = 'General Construction & Renovation';
                             safeSetState(() {});
                           },
                         ),
                         _HomeCategory(
-                          label: 'Carpenter',
+                          label: 'Interior Finishing',
                           selected:
-                              FFAppState().selectedCategory == 'Carpenter',
+                              FFAppState().selectedCategory == 'Interior Finishing',
                           onTap: () {
-                            FFAppState().selectedCategory = 'Carpenter';
+                            FFAppState().selectedCategory = 'Interior Finishing';
                             safeSetState(() {});
                           },
                         ),
@@ -493,31 +494,9 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Widget _buildContractorCard(
       BuildContext context, UsersRecord contractor, bool isMe) {
-    return GestureDetector(
-      onTap: () async {
-        await showDialog(
-          barrierColor: Colors.transparent,
-          barrierDismissible: false,
-          context: context,
-          builder: (dialogContext) => Dialog(
-            elevation: 0,
-            insetPadding: EdgeInsets.zero,
-            backgroundColor: Colors.transparent,
-            child: GestureDetector(
-              onTap: () {
-                FocusScope.of(dialogContext).unfocus();
-                FocusManager.instance.primaryFocus?.unfocus();
-              },
-              child: SizedBox(
-                height: 300,
-                width: double.infinity,
-                child: StartchattingWidget(contractorRecord: contractor),
-              ),
-            ),
-          ),
-        );
-      },
-      child: Container(
+    final isCurrentUserProvider =
+        currentUserDocument?.role == 'service_provider';
+    return Container(
         decoration: BoxDecoration(
           color: FlutterFlowTheme.of(context).secondaryBackground,
           borderRadius: BorderRadius.circular(16),
@@ -636,7 +615,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 ],
               ),
             ),
-            if (!isMe)
+            if (!isMe && !isCurrentUserProvider)
               GestureDetector(
                 onTap: () async {
                   await showDialog(
@@ -681,7 +660,6 @@ class _HomePageWidgetState extends State<HomePageWidget> {
               ),
           ],
         ),
-      ),
     );
   }
 }

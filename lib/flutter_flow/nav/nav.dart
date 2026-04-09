@@ -188,7 +188,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: EmailVerifyPageWidget.routePath,
           requireAuth: true,
           builder: (context, params) => const EmailVerifyPageWidget(),
-        )
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

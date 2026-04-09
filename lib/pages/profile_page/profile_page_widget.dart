@@ -42,7 +42,8 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       await authManager.refreshUser();
-      if (currentUserEmailVerified) {
+      if (currentUserEmailVerified ||
+          currentUserDocument?.role == 'service_provider') {
         return;
       }
 

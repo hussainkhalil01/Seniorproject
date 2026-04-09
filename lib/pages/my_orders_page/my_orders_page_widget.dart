@@ -78,7 +78,8 @@ class _MyOrdersPageWidgetState extends State<MyOrdersPageWidget> {
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       await authManager.refreshUser();
       if (!mounted) return;
-      if (currentUserEmailVerified) return;
+      if (currentUserEmailVerified ||
+          currentUserDocument?.role == 'service_provider') return;
 
       context.goNamed(
         EmailVerifyPageWidget.routeName,
