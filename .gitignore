@@ -1,0 +1,33 @@
+# Node
+node_modules/
+firebase/functions/package-lock.json
+
+# Flutter/Dart build artifacts
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Android
+**/android/.gradle/
+**/android/.kotlin/
+**/android/local.properties
+**/android/key.properties
+
+# DevTools
+devtools_options.yaml
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Environment / secrets
+.env
+google-services.json
+GoogleService-Info.plist

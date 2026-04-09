@@ -1,0 +1,13 @@
+flutter_native_splash:
+  color: "#FFFFFF"
+  color_dark: "#0F1C2E"
+  image: assets/images/trusted-contractors-marketplace-logo-tr.png
+  image_dark: assets/images/trusted-contractors-marketplace-logo-tr.png
+  android_12:
+    color: "#FFFFFF"
+    color_dark: "#0F1C2E"
+    image: assets/images/trusted-contractors-marketplace-logo-tr.png
+    image_dark: assets/images/trusted-contractors-marketplace-logo-tr.png
+  android: true
+  ios: true
+  web: false

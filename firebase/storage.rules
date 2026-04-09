@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Allow authenticated users to read/write their own uploads
+    match /users/{userId}/uploads/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Fallback: deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
