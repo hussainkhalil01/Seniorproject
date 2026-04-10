@@ -274,8 +274,10 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                                               .forgotPasswordEmailFieldTextController
                                               .text,
                                         );
-                                        await actions
-                                            .forgotPasswordStartCooldown();
+                                        if (FFAppState().forgotPasswordSent) {
+                                          await actions
+                                              .forgotPasswordStartCooldown();
+                                        }
 
                                         messenger.clearSnackBars();
                                         messenger.showSnackBar(

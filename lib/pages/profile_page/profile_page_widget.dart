@@ -86,14 +86,17 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
   }
 
   Future<void> _uploadProfilePhoto() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final theme = FlutterFlowTheme.of(context);
+
     final selectedMedia = await selectMediaWithSourceBottomSheet(
       context: context,
       maxWidth: 512.00,
       maxHeight: 512.00,
       imageQuality: 85,
       allowPhoto: true,
-      backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-      textColor: FlutterFlowTheme.of(context).primaryText,
+      backgroundColor: theme.primaryBackground,
+      textColor: theme.primaryText,
       pickerFontFamily: 'Ubuntu',
     );
     if (selectedMedia == null || selectedMedia.isEmpty) return;
@@ -118,84 +121,99 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
         uploadPreset: 'aman_build',
         publicId: functions.uploadImageCloudinaryUserId(currentUserUid),
       );
-    } catch (e) {
+    } catch (_) {
       safeSetState(() => _model.isDataUploading_profileImage = false);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text('Upload error: $e',
-                style: GoogleFonts.ubuntu(
-                    color: FlutterFlowTheme.of(context).error)),
-          ));
-      }
+      messenger.clearSnackBars();
+      messenger.showSnackBar(_errorSnackBar(
+        'Upload failed. Please check your connection and try again',
+        theme,
+      ));
       return;
     }
 
     safeSetState(() => _model.isDataUploading_profileImage = false);
 
-    debugPrint('=== CLOUDINARY UPLOAD DEBUG ===');
-    debugPrint('Status: ${uploadResult?.statusCode}');
-    debugPrint('Succeeded: ${uploadResult?.succeeded}');
-    debugPrint('Body: ${uploadResult?.jsonBody}');
-    debugPrint('==============================');
-
-    if (!(uploadResult?.succeeded ?? false)) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(
-              'Upload failed (${uploadResult?.statusCode}): ${uploadResult?.jsonBody}',
-              style: GoogleFonts.ubuntu(
-                  color: FlutterFlowTheme.of(context).error),
-            ),
-            duration: const Duration(seconds: 8),
-          ));
-      }
+    if (!uploadResult.succeeded) {
+      messenger.clearSnackBars();
+      messenger.showSnackBar(_errorSnackBar(
+        'Upload failed. Please try again',
+        theme,
+      ));
       return;
     }
 
     final secureUrl =
-        getJsonField(uploadResult!.jsonBody, r'''$.secure_url''')
+        getJsonField(uploadResult.jsonBody, r'''$.secure_url''')
                 ?.toString() ??
             '';
     final cloudinaryVersion =
         getJsonField(uploadResult.jsonBody, r'''$.version''')?.toString() ??
             DateTime.now().millisecondsSinceEpoch.toString();
 
-    if (secureUrl.isEmpty) return;
+    if (secureUrl.isEmpty) {
+      messenger.clearSnackBars();
+      messenger.showSnackBar(_errorSnackBar(
+        'Upload failed. Please try again',
+        theme,
+      ));
+      return;
+    }
 
     try {
       await currentUserReference!
           .update(createUsersRecordData(photoUrl: secureUrl));
-      if (context.mounted) {
-        PaintingBinding.instance.imageCache.clear();
-        safeSetState(() {
-          _photoVersion =
-              int.tryParse(cloudinaryVersion) ?? (_photoVersion + 1);
-        });
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content:
-                Text('Profile photo updated!', style: GoogleFonts.ubuntu()),
-            backgroundColor: const Color(0xFF4CAF50),
-            duration: const Duration(seconds: 2),
-          ));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text('Could not save photo: $e',
-                style: GoogleFonts.ubuntu(
-                    color: FlutterFlowTheme.of(context).error)),
-          ));
-      }
+      PaintingBinding.instance.imageCache.clear();
+      safeSetState(() {
+        _photoVersion =
+            int.tryParse(cloudinaryVersion) ?? (_photoVersion + 1);
+      });
+      messenger.clearSnackBars();
+      messenger.showSnackBar(_successSnackBar(
+        'Profile photo updated successfully',
+        theme,
+      ));
+    } catch (_) {
+      messenger.clearSnackBars();
+      messenger.showSnackBar(_errorSnackBar(
+        'Photo uploaded but could not be saved. Please try again',
+        theme,
+      ));
     }
   }
+
+  SnackBar _errorSnackBar(String message, FlutterFlowTheme theme) => SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.ubuntu(
+            color: Colors.white,
+            fontSize: 15.0,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        duration: const Duration(milliseconds: 4000),
+        backgroundColor: theme.error,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      );
+
+  SnackBar _successSnackBar(String message, FlutterFlowTheme theme) => SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.ubuntu(
+            color: Colors.white,
+            fontSize: 15.0,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        duration: const Duration(milliseconds: 4000),
+        backgroundColor: theme.success,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      );
 
   Widget _sectionCard({
     required BuildContext context,
@@ -217,7 +235,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(icon, color: FlutterFlowTheme.of(context).primary, size: 20),
+            Icon(icon, color: FlutterFlowTheme.of(context).secondary, size: 22),
             const SizedBox(width: 8),
             Text(title,
                 style: GoogleFonts.ubuntu(
@@ -239,6 +257,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
     required IconData icon,
     required String label,
     required String value,
+    String? copyValue,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -265,6 +284,12 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
               ],
             ),
           ),
+          if (copyValue != null && copyValue.isNotEmpty)
+            GestureDetector(
+              onTap: () => Clipboard.setData(ClipboardData(text: copyValue)),
+              child: Icon(Icons.copy_rounded,
+                  color: FlutterFlowTheme.of(context).secondaryText, size: 17),
+            ),
         ],
       ),
     );
@@ -291,7 +316,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: color, size: 20),
@@ -384,7 +409,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                         fit: BoxFit.cover,
                                         image: NetworkImage(
                                           currentUserPhoto.isNotEmpty
-                                              ? '${currentUserPhoto}?v=$_photoVersion'
+                                              ? '$currentUserPhoto?v=$_photoVersion'
                                               : 'https://storage.googleapis.com/flutterflow-io-6f20.appspot.com/projects/aman-build-0tehsj/assets/qvuky4xvjia3/user.png',
                                         ),
                                       ),
@@ -396,7 +421,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                       height: 110,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Colors.black.withOpacity(0.45),
+                                        color: Colors.black.withValues(alpha: 0.45),
                                       ),
                                       child: const Center(
                                         child: CircularProgressIndicator(
@@ -466,7 +491,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 5),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.18),
+                                color: Colors.white.withValues(alpha: 0.18),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(color: Colors.white30),
                               ),
@@ -489,7 +514,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.email_outlined,
+                              const Icon(Icons.email_rounded,
                                   color: Colors.white60, size: 15),
                               const SizedBox(width: 6),
                               Flexible(
@@ -567,7 +592,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                     value: desc,
                                   ),
                                 if (desc.isEmpty && !isProvider)
-                                  Text('No description yet.',
+                                  Text('No description yet',
                                       style: GoogleFonts.ubuntu(
                                           color: FlutterFlowTheme.of(context)
                                               .secondaryText,
@@ -661,10 +686,13 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                             _infoRow(
                               context: context,
                               icon: Icons.phone_rounded,
-                              label: 'Phone',
+                              label: 'Phone Number',
                               value: currentPhoneNumber.isNotEmpty
                                   ? currentPhoneNumber
                                   : 'Not provided',
+                              copyValue: currentPhoneNumber.isNotEmpty
+                                  ? currentPhoneNumber.replaceAll(' ', '')
+                                  : null,
                             ),
                           ],
                         ),
@@ -699,7 +727,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                 ),
                                 const SizedBox(height: 12),
                                 DropdownButtonFormField<String>(
-                                  value: currentLang,
+                                  initialValue: currentLang,
                                   decoration: InputDecoration(
                                     contentPadding:
                                         const EdgeInsets.symmetric(
@@ -750,25 +778,40 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                       .toList(),
                                   onChanged: (String? newLang) async {
                                     if (newLang == null) return;
+                                    final messenger =
+                                        ScaffoldMessenger.of(context);
+                                    final theme =
+                                        FlutterFlowTheme.of(context);
                                     await currentUserReference!.update({
                                       'preferred_language': newLang,
                                     });
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                        ..hideCurrentSnackBar()
-                                        ..showSnackBar(SnackBar(
-                                          content: Text(
-                                            newLang.isEmpty
-                                                ? 'Translation disabled.'
-                                                : 'Translation language saved.',
-                                            style: GoogleFonts.ubuntu(),
+                                    messenger.clearSnackBars();
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          newLang.isEmpty
+                                              ? 'Translation disabled'
+                                              : 'Translation language saved',
+                                          style: GoogleFonts.ubuntu(
+                                            color: Colors.white,
+                                            fontSize: 15.0,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                          backgroundColor:
-                                              const Color(0xFF4CAF50),
-                                          duration:
-                                              const Duration(seconds: 2),
-                                        ));
-                                    }
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        duration: const Duration(
+                                            milliseconds: 4000),
+                                        backgroundColor: theme.success,
+                                        behavior: SnackBarBehavior.floating,
+                                        margin:
+                                            const EdgeInsets.fromLTRB(
+                                                16, 0, 16, 80),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    );
                                   },
                                 ),
                               ],
@@ -845,7 +888,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                         SizedBox(
                           width: double.infinity,
                           height: 52,
-                          child: OutlinedButton.icon(
+                          child: ElevatedButton.icon(
                             onPressed: () async {
                               final router = GoRouter.of(context);
                               router.prepareAuthEvent();
@@ -867,28 +910,29 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                 );
                               }
                             },
-                            icon: const Icon(Icons.logout_rounded),
-                            label: Text('Sign Out',
-                                style: GoogleFonts.ubuntu(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15)),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor:
+                            icon: const Icon(Icons.logout_rounded, size: 22),
+                            label: Text(
+                              'Sign Out',
+                              style: GoogleFonts.ubuntu(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
                                   FlutterFlowTheme.of(context).tertiary,
-                              side: BorderSide(
-                                  color:
-                                      FlutterFlowTheme.of(context).tertiary,
-                                  width: 1.5),
+                              foregroundColor: Colors.white,
+                              elevation: 2,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 8),
                         // Delete Account
                         TextButton.icon(
-                          onPressed: () =>
-                              print('ProfileDeleteAccountButton pressed ...'),
+                          onPressed: () {},
                           icon: Icon(Icons.delete_forever_rounded,
                               color: FlutterFlowTheme.of(context).error,
                               size: 18),

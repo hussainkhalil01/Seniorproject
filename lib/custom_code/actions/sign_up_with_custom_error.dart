@@ -47,7 +47,7 @@ Future<String> signUpWithCustomError(
       case 'email-already-in-use':
         return 'Email already exists. Please try a different email';
       case 'too-many-requests':
-        return 'Too many attempts. Please try again later';
+        return 'Too many attempts. Please try again';
       case 'network-request-failed':
         return 'Network error. Please check your internet connection';
       default:

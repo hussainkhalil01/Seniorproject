@@ -360,6 +360,10 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                                 cursorColor:
                                     FlutterFlowTheme.of(context).primary,
                                 enableInteractiveSelection: true,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'[A-Za-z0-9!@#$%^&*]')),
+                                ],
                                 validator: _model
                                     .signInPasswordFieldTextControllerValidator
                                     .asValidator(context),

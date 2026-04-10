@@ -1,8 +1,6 @@
 import '/auth/firebase_auth/auth_util.dart';
-import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:ui';
 import '/custom_code/actions/index.dart' as actions;
 import '/flutter_flow/custom_functions.dart' as functions;
@@ -48,7 +46,6 @@ class _EmailVerifyPageWidgetState extends State<EmailVerifyPageWidget> {
   @override
   void dispose() {
     _model.dispose();
-
     super.dispose();
   }
 
@@ -66,532 +63,410 @@ class _EmailVerifyPageWidgetState extends State<EmailVerifyPageWidget> {
         child: Scaffold(
           key: scaffoldKey,
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          body: SafeArea(
-            top: true,
-            child: SingleChildScrollView(
-              controller: _model.columnController,
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Align(
-                    alignment: const AlignmentDirectional(-1.0, -1.0),
+          body: SingleChildScrollView(
+            controller: _model.columnController,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Gradient header
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        FlutterFlowTheme.of(context).primary,
+                        FlutterFlowTheme.of(context).secondary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
+                    ),
+                  ),
+                  child: SafeArea(
+                    bottom: false,
                     child: Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(10.0, 10.0, 0.0, 0.0),
-                      child: FlutterFlowIconButton(
-                        borderRadius: 20.0,
-                        buttonSize: 40.0,
-                        icon: Icon(
-                          Icons.arrow_back_rounded,
-                          color: FlutterFlowTheme.of(context).secondary,
-                          size: 24.0,
-                        ),
-                        onPressed: () async {
-                          context.goNamedAuth(
-                            SignUpPageWidget.routeName,
-                            context.mounted,
-                            extra: <String, dynamic>{
-                              '__transition_info__': const TransitionInfo(
-                                hasTransition: true,
-                                transitionType: PageTransitionType.fade,
-                                duration: Duration(milliseconds: 150),
-                              ),
-                            },
-                          );
-
-                          GoRouter.of(context).prepareAuthEvent();
-                          await authManager.signOut();
-                          GoRouter.of(context).clearRedirectLocation();
-                        },
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(16.0),
+                            child: Image.asset(
+                              'assets/images/trusted-contractors-marketplace-logo-tr.png',
+                              width: 280.0,
+                              height: 120.0,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Verify Your Email',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.ubuntu(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Check your inbox or Spam folder for the verification link',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.ubuntu(
+                              color: Colors.white70,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Form(
-                              key: _model.formKey,
-                              autovalidateMode: AutovalidateMode.disabled,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                    child: Image.asset(
-                                      'assets/images/trusted-contractors-marketplace-logo-tr.png',
-                                      width: 400.0,
-                                      height: 150.0,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Verify Your Email',
-                                    textAlign: TextAlign.center,
-                                    style: FlutterFlowTheme.of(context)
-                                        .displaySmall
-                                        .override(
-                                          font: GoogleFonts.ubuntu(
-                                            fontWeight: FontWeight.bold,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .displaySmall
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primaryText,
-                                          fontSize: 36.0,
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.bold,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .displaySmall
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    'We sent a verification link to your email.\nPlease check your inbox or Spam folder',
-                                    textAlign: TextAlign.center,
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.ubuntu(
-                                            fontWeight: FontWeight.w500,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText,
-                                          fontSize: 16.0,
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w500,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: TextFormField(
-                                      controller: _model
-                                          .emailVerifyEmailFieldTextController,
-                                      focusNode:
-                                          _model.emailVerifyEmailFieldFocusNode,
-                                      autofocus: false,
-                                      enabled: true,
-                                      readOnly: true,
-                                      obscureText: false,
-                                      decoration: InputDecoration(
-                                        labelText: 'Email Address',
-                                        labelStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              font: GoogleFonts.ubuntu(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontStyle,
-                                              ),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .secondaryText,
-                                              fontSize: 16.0,
-                                              letterSpacing: 0.0,
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontStyle,
-                                            ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: FlutterFlowTheme.of(context)
-                                                .accent4,
-                                            width: 1.0,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: FlutterFlowTheme.of(context)
-                                                .accent2,
-                                            width: 1.0,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                        ),
-                                        errorBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: FlutterFlowTheme.of(context)
-                                                .error,
-                                            width: 1.0,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                        ),
-                                        focusedErrorBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                            color: FlutterFlowTheme.of(context)
-                                                .error,
-                                            width: 1.0,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                        ),
-                                        filled: true,
-                                        fillColor: FlutterFlowTheme.of(context)
-                                            .secondaryBackground,
-                                        contentPadding:
-                                            const EdgeInsetsDirectional.fromSTEB(
-                                                16.0, 0.0, 16.0, 0.0),
-                                        prefixIcon: Icon(
-                                          Icons.email_rounded,
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondary,
-                                          size: 24.0,
-                                        ),
-                                      ),
-                                      style: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            font: GoogleFonts.ubuntu(
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontStyle,
-                                            ),
-                                            fontSize: 16.0,
-                                            letterSpacing: 0.0,
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                      maxLength: 254,
-                                      maxLengthEnforcement:
-                                          MaxLengthEnforcement.enforced,
-                                      buildCounter: (context,
-                                              {required currentLength,
-                                              required isFocused,
-                                              maxLength}) =>
-                                          null,
-                                      keyboardType: TextInputType.emailAddress,
-                                      cursorColor:
-                                          FlutterFlowTheme.of(context).primary,
-                                      enableInteractiveSelection: true,
-                                      validator: _model
-                                          .emailVerifyEmailFieldTextControllerValidator
-                                          .asValidator(context),
-                                    ),
-                                  ),
-                                  FFButtonWidget(
-                                    onPressed:
-                                        FFAppState().emailVerifyCooldownActive
-                                            ? null
-                                            : () async {
-                                                await authManager
-                                                    .sendEmailVerification();
-                                                await actions
-                                                    .emailVerifyStartCooldown();
-                                              },
-                                    text: FFAppState().emailVerifyCooldownActive
-                                        ? functions.cooldownText(FFAppState()
-                                            .emailVerifyCooldownSeconds)
-                                        : 'Resend Verification Link',
-                                    icon: const Icon(
-                                      Icons.add_link_rounded,
-                                      size: 24.0,
-                                    ),
-                                    options: FFButtonOptions(
-                                      width: double.infinity,
-                                      height: 50.0,
-                                      padding: const EdgeInsets.all(8.0),
-                                      iconPadding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                              0.0, 0.0, 0.0, 0.0),
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                      textStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .override(
-                                            font: GoogleFonts.ubuntu(
-                                              fontWeight: FontWeight.w600,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .titleSmall
-                                                      .fontStyle,
-                                            ),
-                                            color: Colors.white,
-                                            letterSpacing: 0.0,
-                                            fontWeight: FontWeight.w600,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleSmall
-                                                    .fontStyle,
-                                          ),
-                                      elevation: 0.0,
-                                      borderSide: const BorderSide(
-                                        color: Colors.transparent,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8.0),
-                                      disabledColor:
-                                          FlutterFlowTheme.of(context).accent4,
-                                      hoverColor: FlutterFlowTheme.of(context)
-                                          .secondary,
-                                      hoverElevation: 4.0,
-                                    ),
-                                  ),
-                                  FFButtonWidget(
-                                    onPressed: () async {
-                                      var shouldSetState = false;
-                                      _model.emailVerifyResult =
-                                          await actions.emailVerifyContinue(
-                                        context,
-                                      );
-                                      shouldSetState = true;
-                                      if (_model.emailVerifyResult ==
-                                          'success') {
-                                        if (shouldSetState) {
-                                          safeSetState(() {});
-                                        }
-                                        return;
-                                      }
+                ),
 
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            _model.emailVerifyResult!,
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodyMedium
-                                                .override(
-                                                  font: GoogleFonts.ubuntu(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontStyle,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .error,
-                                                  fontSize: 16.0,
-                                                  letterSpacing: 0.0,
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontStyle,
-                                                ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          duration:
-                                              const Duration(milliseconds: 4000),
-                                          backgroundColor:
-                                              FlutterFlowTheme.of(context)
-                                                  .primaryBackground,
-                                        ),
-                                      );
-                                      if (shouldSetState) safeSetState(() {});
-                                      return;
-                                    },
-                                    text: 'Continue',
-                                    icon: const Icon(
-                                      Icons.arrow_forward_rounded,
-                                      size: 24.0,
-                                    ),
-                                    options: FFButtonOptions(
-                                      width: double.infinity,
-                                      height: 50.0,
-                                      padding: const EdgeInsets.all(8.0),
-                                      iconPadding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                              0.0, 0.0, 0.0, 0.0),
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                      textStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .override(
-                                            font: GoogleFonts.ubuntu(
-                                              fontWeight: FontWeight.w600,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .titleSmall
-                                                      .fontStyle,
-                                            ),
-                                            color: Colors.white,
-                                            letterSpacing: 0.0,
-                                            fontWeight: FontWeight.w600,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleSmall
-                                                    .fontStyle,
-                                          ),
-                                      elevation: 0.0,
-                                      borderSide: const BorderSide(
-                                        color: Colors.transparent,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8.0),
-                                      hoverColor: FlutterFlowTheme.of(context)
-                                          .secondary,
-                                      hoverElevation: 4.0,
-                                    ),
-                                  ),
-                                  Divider(
-                                    thickness: 0.5,
-                                    color: FlutterFlowTheme.of(context).accent4,
-                                  ),
-                                  RichText(
-                                    textScaler:
-                                        MediaQuery.of(context).textScaler,
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          text: '© ',
-                                          style: FlutterFlowTheme.of(context)
-                                              .bodyMedium
-                                              .override(
-                                                font: GoogleFonts.ubuntu(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .secondaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight: FontWeight.w500,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                        TextSpan(
-                                          text: dateTimeFormat(
-                                            "y",
-                                            getCurrentTimestamp,
-                                            locale: FFLocalizations.of(context)
-                                                .languageCode,
-                                          ),
-                                          style: FlutterFlowTheme.of(context)
-                                              .bodyMedium
-                                              .override(
-                                                font: GoogleFonts.ubuntu(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .secondaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight: FontWeight.w500,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                        TextSpan(
-                                          text:
-                                              ' Trusted Contractors Marketplace',
-                                          style: FlutterFlowTheme.of(context)
-                                              .bodyMedium
-                                              .override(
-                                                font: GoogleFonts.ubuntu(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .secondaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight: FontWeight.w500,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontStyle,
-                                              ),
-                                        )
-                                      ],
-                                      style: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            font: GoogleFonts.ubuntu(
-                                              fontWeight: FontWeight.w500,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontStyle,
-                                            ),
-                                            color: FlutterFlowTheme.of(context)
-                                                .secondaryText,
-                                            letterSpacing: 0.0,
-                                            fontWeight: FontWeight.w500,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                    ),
-                                  ),
-                                ].divide(const SizedBox(height: 16.0)),
-                              ),
-                            ),
-                          ],
+                // Card
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x0D000000),
+                          blurRadius: 12,
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Read-only email field
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextFormField(
+                              controller:
+                                  _model.emailVerifyEmailFieldTextController,
+                              focusNode: _model.emailVerifyEmailFieldFocusNode,
+                              autofocus: false,
+                              enabled: true,
+                              readOnly: true,
+                              obscureText: false,
+                              decoration: InputDecoration(
+                                labelText: 'Email Address',
+                                labelStyle: GoogleFonts.ubuntu(
+                                  color: FlutterFlowTheme.of(context)
+                                      .secondaryText,
+                                  fontSize: 16.0,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color:
+                                        FlutterFlowTheme.of(context).accent4,
+                                    width: 1.0,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12.0),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color:
+                                        FlutterFlowTheme.of(context).primary,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12.0),
+                                ),
+                                errorBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: FlutterFlowTheme.of(context).error,
+                                    width: 1.0,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12.0),
+                                ),
+                                focusedErrorBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: FlutterFlowTheme.of(context).error,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12.0),
+                                ),
+                                filled: true,
+                                fillColor: FlutterFlowTheme.of(context)
+                                    .primaryBackground,
+                                contentPadding:
+                                    const EdgeInsetsDirectional.fromSTEB(
+                                        16.0, 16.0, 16.0, 16.0),
+                                prefixIcon: Icon(
+                                  Icons.email_rounded,
+                                  color:
+                                      FlutterFlowTheme.of(context).secondary,
+                                  size: 22.0,
+                                ),
+                              ),
+                              style: GoogleFonts.ubuntu(
+                                fontSize: 16.0,
+                                color: FlutterFlowTheme.of(context).primaryText,
+                              ),
+                              maxLength: 254,
+                              maxLengthEnforcement:
+                                  MaxLengthEnforcement.enforced,
+                              buildCounter: (context,
+                                      {required currentLength,
+                                      required isFocused,
+                                      maxLength}) =>
+                                  null,
+                              keyboardType: TextInputType.emailAddress,
+                              cursorColor:
+                                  FlutterFlowTheme.of(context).primary,
+                              enableInteractiveSelection: true,
+                              validator: _model
+                                  .emailVerifyEmailFieldTextControllerValidator
+                                  .asValidator(context),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Resend Verification Link button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              onPressed:
+                                  FFAppState().emailVerifyCooldownActive
+                                      ? null
+                                      : () async {
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          final theme =
+                                              FlutterFlowTheme.of(context);
+                                          try {
+                                            await authManager
+                                                .sendEmailVerification();
+                                            await actions
+                                                .emailVerifyStartCooldown();
+                                            messenger.clearSnackBars();
+                                            messenger.showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Verification link sent. Please check your inbox or Spam folder',
+                                                  style: GoogleFonts.ubuntu(
+                                                    color: Colors.white,
+                                                    fontSize: 15.0,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                duration: const Duration(
+                                                    milliseconds: 4000),
+                                                backgroundColor: theme.success,
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                                margin:
+                                                    const EdgeInsets.fromLTRB(
+                                                        16, 0, 16, 80),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            );
+                                          } catch (_) {
+                                            messenger.clearSnackBars();
+                                            messenger.showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Failed to send. Please try again',
+                                                  style: GoogleFonts.ubuntu(
+                                                    color: Colors.white,
+                                                    fontSize: 15.0,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                                duration: const Duration(
+                                                    milliseconds: 4000),
+                                                backgroundColor: theme.error,
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                                margin:
+                                                    const EdgeInsets.fromLTRB(
+                                                        16, 0, 16, 80),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                              icon: Icon(
+                                FFAppState().emailVerifyCooldownActive
+                                    ? Icons.timer_outlined
+                                    : Icons.add_link_rounded,
+                                size: 22,
+                              ),
+                              label: Text(
+                                FFAppState().emailVerifyCooldownActive
+                                    ? functions.cooldownText(FFAppState()
+                                        .emailVerifyCooldownSeconds)
+                                    : 'Resend Verification Link',
+                                style: GoogleFonts.ubuntu(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    FlutterFlowTheme.of(context).primary,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor:
+                                    FlutterFlowTheme.of(context).accent4,
+                                disabledForegroundColor: Colors.white70,
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Continue button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                final messenger =
+                                    ScaffoldMessenger.of(context);
+                                final theme = FlutterFlowTheme.of(context);
+                                _model.emailVerifyResult =
+                                    await actions.emailVerifyContinue(context);
+                                if (_model.emailVerifyResult == 'success') {
+                                  safeSetState(() {});
+                                  return;
+                                }
+                                messenger.clearSnackBars();
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      _model.emailVerifyResult!,
+                                      style: GoogleFonts.ubuntu(
+                                        color: Colors.white,
+                                        fontSize: 15.0,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    duration:
+                                        const Duration(milliseconds: 4000),
+                                    backgroundColor: theme.error,
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.fromLTRB(
+                                        16, 0, 16, 80),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
+                                safeSetState(() {});
+                              },
+                              icon: const Icon(Icons.arrow_forward_rounded,
+                                  size: 22),
+                              label: Text(
+                                'Continue',
+                                style: GoogleFonts.ubuntu(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    FlutterFlowTheme.of(context).secondary,
+                                foregroundColor: Colors.white,
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Back to Sign Up
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Wrong email?',
+                                style: GoogleFonts.ubuntu(
+                                  color: FlutterFlowTheme.of(context)
+                                      .secondaryText,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              TextButton(
+                                onPressed: () async {
+                                  final router = GoRouter.of(context);
+                                  router.prepareAuthEvent();
+                                  await authManager.signOut();
+                                  router.clearRedirectLocation();
+                                  if (context.mounted) {
+                                    context.goNamedAuth(
+                                      SignUpPageWidget.routeName,
+                                      context.mounted,
+                                      extra: <String, dynamic>{
+                                        '__transition_info__':
+                                            const TransitionInfo(
+                                          hasTransition: true,
+                                          transitionType:
+                                              PageTransitionType.fade,
+                                          duration:
+                                              Duration(milliseconds: 150),
+                                        ),
+                                      },
+                                    );
+                                  }
+                                },
+                                child: Text(
+                                  'Back to Sign Up',
+                                  style: GoogleFonts.ubuntu(
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? FlutterFlowTheme.of(context).info
+                                        : FlutterFlowTheme.of(context).primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
+                ),
+
+                // Footer
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Text(
+                    '\u00a9 ${dateTimeFormat("y", getCurrentTimestamp, locale: FFLocalizations.of(context).languageCode)} Trusted Contractors Marketplace',
+                    style: GoogleFonts.ubuntu(
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

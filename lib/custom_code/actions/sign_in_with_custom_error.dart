@@ -31,9 +31,9 @@ Future<String> signInWithCustomError(
         ex.code == 'invalid-credential') {
       return 'Incorrect email or password';
     } else if (ex.code == 'user-disabled') {
-      return 'Your account has been suspended by the administrator. Contact support for assistance';
+      return 'Your account has been suspended by the administrator. Please contact support for assistance';
     } else if (ex.code == 'too-many-requests') {
-      return 'Too many attempts. Please try again later';
+      return 'Too many attempts. Please try again';
     } else if (ex.code == 'network-request-failed') {
       return 'Network error. Please check your internet connection';
     } else {

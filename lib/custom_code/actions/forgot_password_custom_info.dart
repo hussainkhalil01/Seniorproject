@@ -17,9 +17,11 @@ Future<String> forgotPasswordCustomInfo(String email) async {
     return successMsg;
   } on FirebaseAuthException catch (ex) {
     if (ex.code == 'too-many-requests') {
-      return 'Too many requests. Please try again later';
+      FFAppState().forgotPasswordSent = false;
+      return 'Too many attempts. Please try again';
     }
     if (ex.code == 'network-request-failed') {
+      FFAppState().forgotPasswordSent = false;
       return 'Network error. Please check your internet connection';
     }
     FFAppState().forgotPasswordSent = true;

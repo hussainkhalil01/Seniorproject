@@ -26,13 +26,13 @@ Future<String> emailVerifyContinue(BuildContext context) async {
   } on FirebaseAuthException catch (ex) {
     switch (ex.code) {
       case 'too-many-requests':
-        return 'Too many attempts. Please try again later';
+        return 'Too many attempts. Please try again';
       case 'network-request-failed':
         return 'Network error. Please check your internet connection';
       default:
-        return 'unknown_error';
+        return 'Something went wrong. Please try again';
     }
   } catch (_) {
-    return 'unknown_error';
+    return 'Something went wrong. Please try again';
   }
 }
