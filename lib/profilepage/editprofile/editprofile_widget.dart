@@ -63,6 +63,8 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
 
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
+    final messenger = ScaffoldMessenger.of(context);
+    final theme = FlutterFlowTheme.of(context);
     safeSetState(() => _model.isSaving = true);
     try {
       final isProvider =
@@ -81,24 +83,47 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
       await authManager.refreshUser();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
+        messenger
+          ..clearSnackBars()
           ..showSnackBar(SnackBar(
-            content:
-                Text('Profile updated!', style: GoogleFonts.ubuntu()),
-            backgroundColor: const Color(0xFF4CAF50),
-            duration: const Duration(seconds: 2),
+            content: Text(
+              'Profile updated successfully',
+              style: GoogleFonts.ubuntu(
+                color: Colors.white,
+                fontSize: 15.0,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            duration: const Duration(milliseconds: 4000),
+            backgroundColor: theme.success,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ));
         context.pop();
       }
-    } catch (e) {
+    } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
+        messenger
+          ..clearSnackBars()
           ..showSnackBar(SnackBar(
-            content: Text('Error: $e',
-                style: GoogleFonts.ubuntu(
-                    color: FlutterFlowTheme.of(context).error)),
+            content: Text(
+              'Something went wrong. Please try again',
+              style: GoogleFonts.ubuntu(
+                color: Colors.white,
+                fontSize: 15.0,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            duration: const Duration(milliseconds: 4000),
+            backgroundColor: theme.error,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ));
       }
     } finally {
@@ -284,18 +309,18 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
                   const SizedBox(height: 10),
                   FlutterFlowChoiceChips(
                     options: const [
-                      ChipData('Contractor And Handymen',
+                      ChipData('Contractors & Handymen',
                           Icons.handyman_rounded),
-                      ChipData('Plumber', Icons.plumbing_rounded),
-                      ChipData('Electrician',
+                      ChipData('Plumbers', Icons.plumbing_rounded),
+                      ChipData('Electricians',
                           Icons.electrical_services_rounded),
                       ChipData(
                           'Heating', Icons.local_fire_department_rounded),
                       ChipData('Air Conditioning', Icons.ac_unit_rounded),
-                      ChipData('Locksmith', Icons.vpn_key_rounded),
-                      ChipData('Painter', Icons.format_paint_rounded),
+                      ChipData('Locksmiths', Icons.vpn_key_rounded),
+                      ChipData('Painters', Icons.format_paint_rounded),
                       ChipData('Tree Services', Icons.park_rounded),
-                      ChipData('Mover', Icons.local_shipping_rounded),
+                      ChipData('Movers', Icons.local_shipping_rounded),
                     ],
                     onChanged: (val) =>
                         safeSetState(() => _model.categoriesValues = val),

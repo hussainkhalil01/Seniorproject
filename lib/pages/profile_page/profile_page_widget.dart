@@ -1,11 +1,9 @@
 ﻿import '/auth/firebase_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
 import '/backend/backend.dart';
-import '/flutter_flow/flutter_flow_choice_chips.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import '/flutter_flow/form_field_controller.dart';
 import '/flutter_flow/upload_data.dart';
 import 'dart:ui';
 import '/flutter_flow/custom_functions.dart' as functions;
@@ -571,7 +569,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                             return _sectionCard(
                               context: context,
                               title: isProvider
-                                  ? 'Professional Info'
+                                  ? 'Professional Information'
                                   : 'About You',
                               icon: isProvider
                                   ? Icons.work_rounded
@@ -599,78 +597,115 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                           fontSize: 14)),
                                 if (isProvider) ...[
                                   const SizedBox(height: 4),
-                                  FlutterFlowChoiceChips(
-                                    options: const [
-                                      ChipData('Contractor And Handymen',
-                                          Icons.handyman_rounded),
-                                      ChipData(
-                                          'Plumber', Icons.plumbing_rounded),
-                                      ChipData('Electrician',
-                                          Icons.electrical_services_rounded),
-                                      ChipData('Heating',
-                                          Icons.local_fire_department_rounded),
-                                      ChipData('Air Conditioning',
-                                          Icons.ac_unit_rounded),
-                                      ChipData(
-                                          'Locksmith', Icons.vpn_key_rounded),
-                                      ChipData('Painter',
-                                          Icons.format_paint_rounded),
-                                      ChipData(
-                                          'Tree Services', Icons.park_rounded),
-                                      ChipData('Mover',
-                                          Icons.local_shipping_rounded),
-                                    ],
-                                    onChanged: (val) async {
-                                      safeSetState(() =>
-                                          _model.profileCategoriesValues =
-                                              val);
-                                      await currentUserReference!.update({
-                                        ...mapToFirestore({
-                                          'categories': _model
-                                              .profileCategoriesValues,
-                                        }),
-                                      });
-                                    },
-                                    selectedChipStyle: ChipStyle(
-                                      backgroundColor:
-                                          FlutterFlowTheme.of(context).primary,
-                                      textStyle: GoogleFonts.ubuntu(
-                                          color: Colors.white, fontSize: 14),
-                                      iconColor:
-                                          FlutterFlowTheme.of(context).accent3,
-                                      iconSize: 20.0,
-                                      elevation: 2.0,
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                    unselectedChipStyle: ChipStyle(
-                                      backgroundColor:
-                                          FlutterFlowTheme.of(context)
-                                              .primaryBackground,
-                                      textStyle: GoogleFonts.ubuntu(
+                                  // Categories label row — consistent with Title/About
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          Icons.category_rounded,
                                           color: FlutterFlowTheme.of(context)
                                               .secondaryText,
-                                          fontSize: 14),
-                                      iconColor:
-                                          FlutterFlowTheme.of(context).accent3,
-                                      iconSize: 20.0,
-                                      elevation: 0.0,
-                                      borderRadius: BorderRadius.circular(8.0),
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Categories',
+                                              style: GoogleFonts.ubuntu(
+                                                fontSize: 12,
+                                                color:
+                                                    FlutterFlowTheme.of(context)
+                                                        .secondaryText,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                    chipSpacing: 8.0,
-                                    rowSpacing: 8.0,
-                                    multiselect: true,
-                                    initialized:
-                                        _model.profileCategoriesValues != null,
-                                    alignment: WrapAlignment.start,
-                                    controller: _model
-                                            .profileCategoriesValueController ??=
-                                        FormFieldController<List<String>>(
-                                      (currentUserDocument?.categories
-                                              .toList() ??
-                                          []),
-                                    ),
-                                    wrapped: true,
                                   ),
+                                  // Read-only chips — selected categories only
+                                  Builder(builder: (context) {
+                                    const categoryIcons = <String, IconData>{
+                                      'Contractors & Handymen':
+                                          Icons.handyman_rounded,
+                                      'Plumbers': Icons.plumbing_rounded,
+                                      'Electricians':
+                                          Icons.electrical_services_rounded,
+                                      'Heating':
+                                          Icons.local_fire_department_rounded,
+                                      'Air Conditioning': Icons.ac_unit_rounded,
+                                      'Locksmiths': Icons.vpn_key_rounded,
+                                      'Painters': Icons.format_paint_rounded,
+                                      'Tree Services': Icons.park_rounded,
+                                      'Movers': Icons.local_shipping_rounded,
+                                    };
+                                    final cats = currentUserDocument
+                                            ?.categories
+                                            .toList() ??
+                                        [];
+                                    if (cats.isEmpty) {
+                                      return Text(
+                                        'No categories selected',
+                                        style: GoogleFonts.ubuntu(
+                                          fontSize: 14,
+                                          color: FlutterFlowTheme.of(context)
+                                              .secondaryText,
+                                        ),
+                                      );
+                                    }
+                                    return Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      alignment: WrapAlignment.center,
+                                      children: cats
+                                          .map((cat) => Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      FlutterFlowTheme.of(
+                                                              context)
+                                                          .primary,
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    if (categoryIcons
+                                                        .containsKey(cat)) ...[
+                                                      Icon(
+                                                        categoryIcons[cat],
+                                                        size: 14,
+                                                        color: const Color(
+                                                            0xFFF4A026),
+                                                      ),
+                                                      const SizedBox(width: 5),
+                                                    ],
+                                                    Text(
+                                                      cat,
+                                                      style: GoogleFonts.ubuntu(
+                                                        color: Colors.white,
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ))
+                                          .toList(),
+                                    );
+                                  }),
                                 ],
                               ],
                             );
@@ -690,7 +725,8 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                               value: currentPhoneNumber.isNotEmpty
                                   ? currentPhoneNumber
                                   : 'Not provided',
-                              copyValue: currentPhoneNumber.isNotEmpty
+                              copyValue: currentPhoneNumber.isNotEmpty &&
+                                      currentPhoneNumber != 'Not provided'
                                   ? currentPhoneNumber.replaceAll(' ', '')
                                   : null,
                             ),

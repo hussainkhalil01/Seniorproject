@@ -39,6 +39,8 @@ Future<String> signUpWithCustomError(
       'is_disabled': false,
       'photo_url':
           'https://res.cloudinary.com/dxjzonvxd/image/upload/v1774901264/user-icon.png',
+      'short_description': 'No description yet',
+      'phone_number': 'Not provided',
     });
     await user.sendEmailVerification();
     return 'success';
