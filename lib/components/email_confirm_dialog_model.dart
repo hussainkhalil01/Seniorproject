@@ -11,19 +11,12 @@ class EmailConfirmDialogModel
   TextEditingController? forgotPasswordEmailFieldTextController;
   String? Function(BuildContext, String?)?
       forgotPasswordEmailFieldTextControllerValidator;
-  // State field(s) for Row widget.
-  ScrollController? rowController;
-
   @override
-  void initState(BuildContext context) {
-    rowController = ScrollController();
-  }
+  void initState(BuildContext context) {}
 
   @override
   void dispose() {
     forgotPasswordEmailFieldFocusNode?.dispose();
     forgotPasswordEmailFieldTextController?.dispose();
-
-    rowController?.dispose();
   }
 }

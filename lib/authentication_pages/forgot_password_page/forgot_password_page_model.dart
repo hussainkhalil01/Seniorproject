@@ -31,6 +31,9 @@ class ForgotPasswordPageModel
   // Stores action output result for [Custom Action - forgotPasswordCustomInfo] action in ForgotPasswordButton widget.
   String? forgotPasswordResult;
 
+  // Whether the send reset link action is in progress.
+  bool isLoading = false;
+
   @override
   void initState(BuildContext context) {
     columnController = ScrollController();

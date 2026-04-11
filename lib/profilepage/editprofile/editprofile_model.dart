@@ -30,6 +30,29 @@ class EditprofileModel extends FlutterFlowModel<EditprofileWidget> {
 
   bool isSaving = false;
 
+  final formKey = GlobalKey<FormState>();
+
+  // Snapshots of initial values to detect changes
+  String? initialName;
+  String? initialAbout;
+  String? initialPhone;
+  String? initialTitle;
+  List<String>? initialCategories;
+
+  bool get hasChanges {
+    if (initialName == null) return false;
+    if (nameController?.text != initialName) return true;
+    if (aboutController?.text != initialAbout) return true;
+    if (phoneController?.text != initialPhone) return true;
+    if (titleController?.text != initialTitle) return true;
+    if (categoriesValues != null) {
+      final current = List<String>.from(categoriesValues!)..sort();
+      final initial = List<String>.from(initialCategories ?? [])..sort();
+      if (current.join(',') != initial.join(',')) return true;
+    }
+    return false;
+  }
+
   @override
   void initState(BuildContext context) {}
 

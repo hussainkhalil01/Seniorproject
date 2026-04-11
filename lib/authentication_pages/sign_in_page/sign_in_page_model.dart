@@ -45,6 +45,9 @@ class SignInPageModel extends FlutterFlowModel<SignInPageWidget> {
   // Stores action output result for [Custom Action - signInWithCustomError] action in SignInButton widget.
   String? signInResult;
 
+  // Whether sign-in is in progress.
+  bool isLoading = false;
+
   @override
   void initState(BuildContext context) {
     columnController = ScrollController();

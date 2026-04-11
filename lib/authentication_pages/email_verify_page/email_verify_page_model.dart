@@ -17,6 +17,12 @@ class EmailVerifyPageModel extends FlutterFlowModel<EmailVerifyPageWidget> {
   // Stores action output result for [Custom Action - emailVerifyContinue] action in EmailVerifyButton2 widget.
   String? emailVerifyResult;
 
+  // Whether the continue action is in progress.
+  bool isLoading = false;
+
+  // Whether the resend verification link action is in progress.
+  bool isResendLoading = false;
+
   @override
   void initState(BuildContext context) {
     columnController = ScrollController();

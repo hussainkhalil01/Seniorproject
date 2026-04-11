@@ -5,7 +5,7 @@ service cloud.firestore {
       allow create: if true;
       allow read: if request.auth != null;
       allow update: if request.auth != null && request.auth.uid == document;
-      allow delete: if false;
+      allow delete: if request.auth != null && request.auth.uid == document;
     }
 
     match /chat_messages/{document} {

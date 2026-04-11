@@ -5,7 +5,6 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/form_field_controller.dart';
 import 'dart:ui';
-import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,7 +25,7 @@ class EditprofileWidget extends StatefulWidget {
 class _EditprofileWidgetState extends State<EditprofileWidget> {
   late EditprofileModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  final _phoneMask = MaskTextInputFormatter(mask: '+973 #### ####');
+  final _phoneMask = MaskTextInputFormatter(mask: '#### ####');
 
   @override
   void initState() {
@@ -42,27 +41,78 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
         text: valueOrDefault(currentUserDocument?.fullName, ''));
     _model.nameFocusNode ??= FocusNode();
 
+    final storedDesc =
+        valueOrDefault(currentUserDocument?.shortDescription, '');
     _model.aboutController ??= TextEditingController(
-        text: valueOrDefault(currentUserDocument?.shortDescription, ''));
+        text: storedDesc == 'No description yet' ? '' : storedDesc);
     _model.aboutFocusNode ??= FocusNode();
 
-    _model.phoneController ??=
-        TextEditingController(text: currentPhoneNumber);
+    final storedPhone = currentPhoneNumber;
+    String phoneInit = '';
+    if (storedPhone != 'Not provided' && storedPhone.isNotEmpty) {
+      final digits = storedPhone.replaceAll(RegExp(r'\D'), '');
+      if (digits.length > 3 && digits.startsWith('973')) {
+        final userDigits = digits.substring(3);
+        if (userDigits.length == 8) {
+          phoneInit =
+              '${userDigits.substring(0, 4)} ${userDigits.substring(4)}';
+        }
+      }
+    }
+    _model.phoneController ??= TextEditingController(text: phoneInit);
     _model.phoneFocusNode ??= FocusNode();
 
+    final storedTitle = valueOrDefault(currentUserDocument?.title, '');
     _model.titleController ??= TextEditingController(
-        text: valueOrDefault(currentUserDocument?.title, ''));
+        text: storedTitle == 'No title' ? '' : storedTitle);
     _model.titleFocusNode ??= FocusNode();
+
+    // Capture initial snapshots and attach change listeners (once only)
+    if (_model.initialName == null) {
+      _model.initialName = _model.nameController!.text;
+      _model.initialAbout = _model.aboutController!.text;
+      _model.initialPhone = _model.phoneController!.text;
+      _model.initialTitle = _model.titleController!.text;
+      _model.initialCategories =
+          currentUserDocument?.categories.toList() ?? [];
+      _model.nameController!.addListener(_onChanged);
+      _model.aboutController!.addListener(_onChanged);
+      _model.phoneController!.addListener(_onChanged);
+      _model.titleController!.addListener(_onChanged);
+    }
+  }
+
+  void _onChanged() {
+    if (mounted) safeSetState(() {});
   }
 
   @override
   void dispose() {
+    _model.nameController?.removeListener(_onChanged);
+    _model.aboutController?.removeListener(_onChanged);
+    _model.phoneController?.removeListener(_onChanged);
+    _model.titleController?.removeListener(_onChanged);
     _model.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
+
+    // Normalize full name: collapse spaces + title-case each word
+    final rawName = _model.nameController!.text
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+    _model.nameController!.text = rawName.split(' ').map((w) {
+      if (w.isEmpty) return w;
+      return w[0].toUpperCase() + w.substring(1).toLowerCase();
+    }).join(' ');
+
+    if (_model.formKey.currentState == null ||
+        !_model.formKey.currentState!.validate()) {
+      safeSetState(() {});
+      return;
+    }
     final messenger = ScaffoldMessenger.of(context);
     final theme = FlutterFlowTheme.of(context);
     safeSetState(() => _model.isSaving = true);
@@ -70,11 +120,24 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
       final isProvider =
           valueOrDefault(currentUserDocument?.role, '') == 'service_provider';
 
+      // Determine phone value: empty field → "Not provided"
+      final userDigits = _model.phoneController!.text
+          .replaceAll(RegExp(r'\D'), '');
+      final phoneValue = userDigits.isEmpty
+          ? 'Not provided'
+          : '+973 ${userDigits.substring(0, 4)} ${userDigits.substring(4)}';
+
       final Map<String, dynamic> data = {
+        'full_name': _model.nameController!.text.trim(),
         'display_name': _model.nameController!.text.trim(),
-        'short_description': _model.aboutController!.text.trim(),
-        'phone_number': _model.phoneController!.text.trim(),
-        if (isProvider) 'title': _model.titleController!.text.trim(),
+        'short_description': _model.aboutController!.text.trim().isEmpty
+            ? 'No description yet'
+            : _model.aboutController!.text.trim(),
+        'phone_number': phoneValue,
+        if (isProvider)
+          'title': _model.titleController!.text.trim().isEmpty
+              ? 'No title'
+              : _model.titleController!.text.trim(),
         if (isProvider && _model.categoriesValues != null)
           ...mapToFirestore({'categories': _model.categoriesValues}),
       };
@@ -82,7 +145,17 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
       await currentUserReference!.update(data);
       await authManager.refreshUser();
 
-      if (context.mounted) {
+      // Reset snapshots so the save button becomes disabled again
+      _model.initialName = _model.nameController!.text;
+      _model.initialAbout = _model.aboutController!.text;
+      _model.initialPhone = _model.phoneController!.text;
+      _model.initialTitle = _model.titleController!.text;
+      _model.initialCategories =
+          _model.categoriesValues?.toList() ?? _model.initialCategories ?? [];
+      _model.categoriesValues = null;
+      _model.categoriesController = null;
+
+      if (mounted) {
         messenger
           ..clearSnackBars()
           ..showSnackBar(SnackBar(
@@ -105,7 +178,7 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
         context.pop();
       }
     } catch (_) {
-      if (context.mounted) {
+      if (mounted) {
         messenger
           ..clearSnackBars()
           ..showSnackBar(SnackBar(
@@ -137,10 +210,13 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
     required FocusNode focusNode,
     required String label,
     required IconData icon,
+    Widget? prefixWidget,
     int maxLines = 1,
     int? maxLength,
     TextInputType keyboardType = TextInputType.text,
+    TextCapitalization textCapitalization = TextCapitalization.none,
     List<TextInputFormatter>? formatters,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -150,22 +226,10 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
       maxLengthEnforcement: maxLength != null
           ? MaxLengthEnforcement.enforced
           : MaxLengthEnforcement.none,
-      buildCounter: maxLength != null
-          ? (context,
-                  {required currentLength,
-                  required isFocused,
-                  maxLength}) =>
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text('$currentLength / $maxLength',
-                    style: GoogleFonts.ubuntu(
-                        fontSize: 11,
-                        color:
-                            FlutterFlowTheme.of(context).secondaryText)),
-              )
-          : null,
       keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
       inputFormatters: formatters,
+      validator: validator,
       style: GoogleFonts.ubuntu(
           fontSize: 15,
           color: FlutterFlowTheme.of(context).primaryText),
@@ -174,8 +238,12 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
         labelStyle: GoogleFonts.ubuntu(
             color: FlutterFlowTheme.of(context).secondaryText,
             fontSize: 14),
-        prefixIcon:
-            Icon(icon, color: FlutterFlowTheme.of(context).primary, size: 20),
+        counterText: '',
+        errorStyle: GoogleFonts.ubuntu(
+            color: FlutterFlowTheme.of(context).error, fontSize: 12),
+        errorMaxLines: 3,
+        prefixIcon: prefixWidget ??
+            Icon(icon, color: FlutterFlowTheme.of(context).secondary, size: 22),
         filled: true,
         fillColor: FlutterFlowTheme.of(context).primaryBackground,
         contentPadding:
@@ -188,6 +256,16 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
         focusedBorder: OutlineInputBorder(
           borderSide: BorderSide(
               color: FlutterFlowTheme.of(context).primary, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+              color: FlutterFlowTheme.of(context).error, width: 1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+              color: FlutterFlowTheme.of(context).error, width: 1.5),
           borderRadius: BorderRadius.circular(12),
         ),
       ),
@@ -205,227 +283,355 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back_rounded,
-                color: FlutterFlowTheme.of(context).primaryText),
-            onPressed: () => context.pop(),
-          ),
-          title: Text('Edit Profile',
-              style: GoogleFonts.ubuntu(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: FlutterFlowTheme.of(context).primaryText)),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: _model.isSaving
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2.5))
-                  : TextButton(
-                      onPressed: _save,
-                      style: TextButton.styleFrom(
-                        foregroundColor:
-                            FlutterFlowTheme.of(context).primary,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: Text('Save',
-                          style: GoogleFonts.ubuntu(
-                              fontWeight: FontWeight.w700, fontSize: 15)),
-                    ),
-            ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Divider(
-                height: 1,
-                color: FlutterFlowTheme.of(context).accent4),
-          ),
-        ),
         body: AuthUserStreamWidget(
-          builder: (context) => SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+          builder: (context) => Form(
+            key: _model.formKey,
+            autovalidateMode: AutovalidateMode.disabled,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // â”€â”€ PERSONAL INFO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                _section(context, 'Personal Info', Icons.person_rounded),
-                const SizedBox(height: 12),
-                _buildField(
+                // ── GRADIENT HEADER ───────────────────────────
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        FlutterFlowTheme.of(context).primary,
+                        FlutterFlowTheme.of(context).secondary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(32),
+                      bottomRight: Radius.circular(32),
+                    ),
+                  ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      child: Row(
+                        children: [
+                          // Back button
+                          Material(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => context.pop(),
+                              child: const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Icon(Icons.arrow_back_rounded,
+                                    color: Colors.white, size: 22),
+                              ),
+                            ),
+                          ),
+                          // Title
+                          Expanded(
+                            child: Text(
+                              'Edit Profile',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.ubuntu(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white),
+                            ),
+                          ),
+                          // Save button / spinner
+                          _model.isSaving
+                              ? const SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.white),
+                                    ),
+                                  ),
+                                )
+                              : Opacity(
+                                  opacity: _model.hasChanges ? 1.0 : 0.4,
+                                  child: Material(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap:
+                                          _model.hasChanges ? _save : null,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 8),
+                                        child: Text('Save',
+                                            style: GoogleFonts.ubuntu(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15,
+                                                color: Colors.white)),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  ),
+                // ── SCROLLABLE FIELDS ─────────────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                // ── PERSONAL INFORMATION CARD ──────────────────
+                _sectionCard(
                   context: context,
-                  controller: _model.nameController!,
-                  focusNode: _model.nameFocusNode!,
-                  label: 'Full Name',
-                  icon: Icons.badge_rounded,
-                  maxLength: 50,
+                  title: 'Profile Information',
+                  icon: Icons.person_rounded,
+                  children: [
+                    _buildField(
+                      context: context,
+                      controller: _model.nameController!,
+                      focusNode: _model.nameFocusNode!,
+                      label: 'Full Name',
+                      icon: Icons.badge_rounded,
+                      maxLength: 30,
+                      textCapitalization: TextCapitalization.words,
+                      formatters: [
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'[A-Za-z ]')),
+                        if (!isAndroid && !isiOS)
+                          TextInputFormatter.withFunction((old, nv) =>
+                              TextEditingValue(
+                                selection: nv.selection,
+                                text: nv.text.toCapitalization(
+                                    TextCapitalization.words),
+                              )),
+                      ],
+                      validator: (_) {
+                        final val = _model.nameController!.text.trim();
+                        if (val.isEmpty) return 'Please enter your full name';
+                        if (val.length < 3) return 'Full name is too short';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildField(
+                      context: context,
+                      controller: _model.aboutController!,
+                      focusNode: _model.aboutFocusNode!,
+                      label: 'About',
+                      icon: Icons.description_rounded,
+                      maxLines: 4,
+                      maxLength: 120,
+                      keyboardType: TextInputType.multiline,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildField(
+                      context: context,
+                      controller: _model.phoneController!,
+                      focusNode: _model.phoneFocusNode!,
+                      label: 'Phone Number',
+                      icon: Icons.phone_rounded,
+                      prefixWidget: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.phone_rounded,
+                                color:
+                                    FlutterFlowTheme.of(context).secondary,
+                                size: 22),
+                            const SizedBox(width: 6),
+                            const Text('🇧🇭',
+                                style: TextStyle(fontSize: 20)),
+                            const SizedBox(width: 6),
+                            Text('+973',
+                                style: GoogleFonts.ubuntu(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: FlutterFlowTheme.of(context)
+                                        .secondary)),
+                          ],
+                        ),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      formatters: [_phoneMask],
+                      validator: (_) {
+                        final digits = _model.phoneController!.text
+                            .replaceAll(RegExp(r'\D'), '');
+                        if (digits.isEmpty) return null;
+                        if (digits.length < 8) {
+                          return 'Phone number must be exactly 8 digits';
+                        }
+                        if (!['1', '3', '6'].contains(digits[0])) {
+                          return 'Phone number must start with 3, 6 or 1 only';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _buildField(
-                  context: context,
-                  controller: _model.aboutController!,
-                  focusNode: _model.aboutFocusNode!,
-                  label: 'About You',
-                  icon: Icons.description_rounded,
-                  maxLines: 4,
-                  maxLength: 120,
-                  keyboardType: TextInputType.multiline,
-                ),
-                const SizedBox(height: 12),
-                _buildField(
-                  context: context,
-                  controller: _model.phoneController!,
-                  focusNode: _model.phoneFocusNode!,
-                  label: 'Phone Number',
-                  icon: Icons.phone_rounded,
-                  keyboardType: TextInputType.phone,
-                  formatters: [_phoneMask],
-                ),
-                // â”€â”€ SERVICE PROVIDER EXTRAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── PROFESSIONAL INFORMATION CARD (providers) ──
                 if (valueOrDefault(currentUserDocument?.role, '') ==
                     'service_provider') ...[
-                  const SizedBox(height: 28),
-                  _section(
-                      context, 'Professional Info', Icons.work_rounded),
-                  const SizedBox(height: 12),
-                  _buildField(
+                  const SizedBox(height: 24),
+                  _sectionCard(
                     context: context,
-                    controller: _model.titleController!,
-                    focusNode: _model.titleFocusNode!,
-                    label: 'Professional Title',
-                    icon: Icons.title_rounded,
-                    maxLength: 40,
+                    title: 'Professional Information',
+                    icon: Icons.work_rounded,
+                    children: [
+                    _buildField(
+                      context: context,
+                      controller: _model.titleController!,
+                      focusNode: _model.titleFocusNode!,
+                      label: 'Professional Title',
+                      icon: Icons.title_rounded,
+                      maxLength: 40,
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    decoration: BoxDecoration(
+                      color: FlutterFlowTheme.of(context).primaryBackground,
+                      border: Border.all(
+                          color: FlutterFlowTheme.of(context).accent4,
+                          width: 1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.category_rounded,
+                                color: FlutterFlowTheme.of(context).secondary,
+                                size: 22),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Categories',
+                              style: GoogleFonts.ubuntu(
+                                fontSize: 14,
+                                color: FlutterFlowTheme.of(context)
+                                    .secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        FlutterFlowChoiceChips(
+                          options: const [
+                            ChipData('Contractors & Handymen',
+                                Icons.handyman_rounded),
+                            ChipData('Plumbers', Icons.plumbing_rounded),
+                            ChipData('Electricians',
+                                Icons.electrical_services_rounded),
+                            ChipData('Heating',
+                                Icons.local_fire_department_rounded),
+                            ChipData(
+                                'Air Conditioning', Icons.ac_unit_rounded),
+                            ChipData('Locksmiths', Icons.vpn_key_rounded),
+                            ChipData(
+                                'Painters', Icons.format_paint_rounded),
+                            ChipData('Tree Services', Icons.park_rounded),
+                            ChipData(
+                                'Movers', Icons.local_shipping_rounded),
+                          ],
+                          onChanged: (val) =>
+                              safeSetState(() => _model.categoriesValues = val),
+                          selectedChipStyle: ChipStyle(
+                            backgroundColor:
+                                FlutterFlowTheme.of(context).primary,
+                            textStyle: GoogleFonts.ubuntu(
+                                color: Colors.white, fontSize: 13),
+                            iconColor: const Color(0xFFF4A026),
+                            iconSize: 18,
+                            elevation: 2,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          unselectedChipStyle: ChipStyle(
+                            backgroundColor: FlutterFlowTheme.of(context)
+                                .secondaryBackground,
+                            textStyle: GoogleFonts.ubuntu(
+                                color: FlutterFlowTheme.of(context)
+                                    .secondaryText,
+                                fontSize: 13),
+                            iconColor: const Color(0xFFF4A026),
+                            iconSize: 18,
+                            elevation: 0,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          chipSpacing: 8,
+                          rowSpacing: 8,
+                          multiselect: true,
+                          initialized: _model.categoriesController != null,
+                          alignment: WrapAlignment.start,
+                          controller: _model.categoriesController ??=
+                              FormFieldController<List<String>>(
+                            currentUserDocument?.categories.toList() ?? [],
+                          ),
+                          wrapped: true,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Text('Service Categories',
-                      style: GoogleFonts.ubuntu(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: FlutterFlowTheme.of(context).secondaryText)),
-                  const SizedBox(height: 10),
-                  FlutterFlowChoiceChips(
-                    options: const [
-                      ChipData('Contractors & Handymen',
-                          Icons.handyman_rounded),
-                      ChipData('Plumbers', Icons.plumbing_rounded),
-                      ChipData('Electricians',
-                          Icons.electrical_services_rounded),
-                      ChipData(
-                          'Heating', Icons.local_fire_department_rounded),
-                      ChipData('Air Conditioning', Icons.ac_unit_rounded),
-                      ChipData('Locksmiths', Icons.vpn_key_rounded),
-                      ChipData('Painters', Icons.format_paint_rounded),
-                      ChipData('Tree Services', Icons.park_rounded),
-                      ChipData('Movers', Icons.local_shipping_rounded),
                     ],
-                    onChanged: (val) =>
-                        safeSetState(() => _model.categoriesValues = val),
-                    selectedChipStyle: ChipStyle(
-                      backgroundColor: FlutterFlowTheme.of(context).primary,
-                      textStyle: GoogleFonts.ubuntu(
-                          color: Colors.white, fontSize: 13),
-                      iconColor: Colors.white,
-                      iconSize: 18,
-                      elevation: 2,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    unselectedChipStyle: ChipStyle(
-                      backgroundColor:
-                          FlutterFlowTheme.of(context).secondaryBackground,
-                      textStyle: GoogleFonts.ubuntu(
-                          color: FlutterFlowTheme.of(context).secondaryText,
-                          fontSize: 13),
-                      iconColor: FlutterFlowTheme.of(context).accent3,
-                      iconSize: 18,
-                      elevation: 0,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    chipSpacing: 8,
-                    rowSpacing: 8,
-                    multiselect: true,
-                    initialized: _model.categoriesValues != null,
-                    alignment: WrapAlignment.start,
-                    controller: _model.categoriesController ??=
-                        FormFieldController<List<String>>(
-                      currentUserDocument?.categories.toList() ?? [],
-                    ),
-                    wrapped: true,
                   ),
                 ],
-                const SizedBox(height: 28),
-                // â”€â”€ ACCOUNT ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                _section(
-                    context, 'Account', Icons.manage_accounts_rounded),
-                const SizedBox(height: 12),
-                _actionTile(
-                  context: context,
-                  icon: Icons.lock_outline_rounded,
-                  label: 'Change Password',
-                  onTap: () => context.pushNamed(EditpasswordWidget.routeName),
-                ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _section(BuildContext context, String title, IconData icon) {
-    return Row(children: [
-      Icon(icon, color: FlutterFlowTheme.of(context).primary, size: 18),
-      const SizedBox(width: 8),
-      Text(title,
-          style: GoogleFonts.ubuntu(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: FlutterFlowTheme.of(context).primaryText)),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Divider(
-            color: FlutterFlowTheme.of(context).accent4, thickness: 1),
-      ),
-    ]);
-  }
-
-  Widget _actionTile({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: FlutterFlowTheme.of(context).accent4, width: 1),
-        ),
-        child: Row(
-          children: [
-            Icon(icon,
-                color: FlutterFlowTheme.of(context).primary, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(label,
-                  style: GoogleFonts.ubuntu(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: FlutterFlowTheme.of(context).primaryText)),
-            ),
-            Icon(Icons.chevron_right_rounded,
-                color: FlutterFlowTheme.of(context).secondaryText, size: 20),
+          ),
           ],
         ),
       ),
+    ),
+  ),
+);
+  }
+
+  Widget _sectionCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x0D000000), blurRadius: 10, offset: Offset(0, 2))
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(icon,
+                color: FlutterFlowTheme.of(context).secondary, size: 22),
+            const SizedBox(width: 8),
+            Text(title,
+                style: GoogleFonts.ubuntu(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: FlutterFlowTheme.of(context).primaryText)),
+          ]),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: FlutterFlowTheme.of(context).accent4),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
     );
   }
+
 }

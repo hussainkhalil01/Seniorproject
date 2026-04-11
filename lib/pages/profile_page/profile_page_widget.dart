@@ -274,10 +274,11 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                         fontSize: 12,
                         color: FlutterFlowTheme.of(context).secondaryText)),
                 const SizedBox(height: 2),
-                Text(value,
+                Text(
+                    value,
                     style: GoogleFonts.ubuntu(
                         fontSize: 15,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
                         color: FlutterFlowTheme.of(context).primaryText)),
               ],
             ),
@@ -314,17 +315,19 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
+                    color: FlutterFlowTheme.of(context).secondary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: color, size: 20),
+                  child: Icon(icon,
+                      color: FlutterFlowTheme.of(context).secondary,
+                      size: 22),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(label,
                       style: GoogleFonts.ubuntu(
                           fontSize: 15,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.bold,
                           color:
                               FlutterFlowTheme.of(context).primaryText)),
                 ),
@@ -355,13 +358,11 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           body: (!loggedIn || currentUserDocument == null)
               ? const SizedBox.shrink()
-              : SafeArea(
-            top: true,
-            child: SingleChildScrollView(
+              : SingleChildScrollView(
               controller: _model.columnController,
               child: Column(
                 children: [
-                  // â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // HERO HEADER
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -378,7 +379,9 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                         bottomRight: Radius.circular(32),
                       ),
                     ),
-                    child: Padding(
+                    child: SafeArea(
+                      bottom: false,
+                      child: Padding(
                       padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
                       child: Column(
                         children: [
@@ -540,7 +543,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                     color: Colors.white54, size: 13),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Member since ${currentUserDocument?.createdTime != null ? dateTimeFormat("yMMMd", currentUserDocument!.createdTime!, locale: FFLocalizations.of(context).languageCode) : ''}',
+                                  'Member since ${currentUserDocument?.createdTime != null ? dateTimeFormat("yMMMMd", currentUserDocument!.createdTime!, locale: FFLocalizations.of(context).languageCode) : ''}',
                                   style: GoogleFonts.ubuntu(
                                       color: Colors.white54, fontSize: 13),
                                 ),
@@ -550,8 +553,9 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                         ],
                       ),
                     ),
+                    ),
                   ),
-                  // â”€â”€ BODY CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // BODY CONTENT
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
                     child: Column(
@@ -579,22 +583,18 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                   _infoRow(
                                     context: context,
                                     icon: Icons.title_rounded,
-                                    label: 'Title',
+                                    label: 'Professional Title',
                                     value: title,
                                   ),
-                                if (desc.isNotEmpty)
-                                  _infoRow(
-                                    context: context,
-                                    icon: Icons.description_rounded,
-                                    label: 'About',
-                                    value: desc,
-                                  ),
-                                if (desc.isEmpty && !isProvider)
-                                  Text('No description yet',
-                                      style: GoogleFonts.ubuntu(
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText,
-                                          fontSize: 14)),
+                                _infoRow(
+                                  context: context,
+                                  icon: Icons.description_rounded,
+                                  label: 'About',
+                                  value: (desc.isEmpty ||
+                                          desc == 'No description yet')
+                                      ? 'No description yet'
+                                      : desc,
+                                ),
                                 if (isProvider) ...[
                                   const SizedBox(height: 4),
                                   // Categories label row — consistent with Title/About
@@ -653,9 +653,10 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                       return Text(
                                         'No categories selected',
                                         style: GoogleFonts.ubuntu(
-                                          fontSize: 14,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
                                           color: FlutterFlowTheme.of(context)
-                                              .secondaryText,
+                                              .primaryText,
                                         ),
                                       );
                                     }
@@ -740,11 +741,8 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                               {'code': '', 'label': 'No Translation', 'flag': '🌐'},
                               {'code': 'ar', 'label': 'Arabic', 'flag': '🇸🇦'},
                               {'code': 'en', 'label': 'English', 'flag': '🇬🇧'},
-                              {'code': 'fr', 'label': 'French', 'flag': '🇫🇷'},
                               {'code': 'hi', 'label': 'Hindi', 'flag': '🇮🇳'},
                               {'code': 'ur', 'label': 'Urdu', 'flag': '🇵🇰'},
-                              {'code': 'tl', 'label': 'Tagalog', 'flag': '🇵🇭'},
-                              {'code': 'es', 'label': 'Spanish', 'flag': '🇪🇸'},
                             ];
                             final currentLang = valueOrDefault(
                                 currentUserDocument?.preferredLanguage, '');
@@ -808,7 +806,9 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                             child: Text(
                                               '${lang['flag']}  ${lang['label']}',
                                               style: GoogleFonts.ubuntu(
-                                                  fontSize: 14),
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ))
                                       .toList(),
@@ -875,10 +875,35 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                               _menuTile(
                                 context: context,
                                 icon: Icons.person_rounded,
-                                label: 'Edit Profile',
+                                label: 'Profile',
                                 color: FlutterFlowTheme.of(context).primary,
                                 onTap: () => context.pushNamed(
                                   EditprofileWidget.routeName,
+                                  extra: <String, dynamic>{
+                                    '__transition_info__':
+                                        const TransitionInfo(
+                                      hasTransition: true,
+                                      transitionType: PageTransitionType.fade,
+                                      duration: Duration(milliseconds: 150),
+                                    ),
+                                  },
+                                ),
+                              ),
+                              _menuTile(
+                                context: context,
+                                icon: Icons.manage_accounts_rounded,
+                                label: 'Account',
+                                color: FlutterFlowTheme.of(context).primary,
+                                onTap: () => context.pushNamed(
+                                  EditpasswordWidget.routeName,
+                                  extra: <String, dynamic>{
+                                    '__transition_info__':
+                                        const TransitionInfo(
+                                      hasTransition: true,
+                                      transitionType: PageTransitionType.fade,
+                                      duration: Duration(milliseconds: 150),
+                                    ),
+                                  },
                                 ),
                               ),
                               _menuTile(
@@ -919,75 +944,12 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        // Sign Out
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              final router = GoRouter.of(context);
-                              router.prepareAuthEvent();
-                              await authManager.signOut();
-                              router.clearRedirectLocation();
-
-                              if (context.mounted) {
-                                context.goNamedAuth(
-                                  SignInPageWidget.routeName,
-                                  context.mounted,
-                                  extra: <String, dynamic>{
-                                    '__transition_info__':
-                                        const TransitionInfo(
-                                      hasTransition: true,
-                                      transitionType: PageTransitionType.fade,
-                                      duration: Duration(milliseconds: 150),
-                                    ),
-                                  },
-                                );
-                              }
-                            },
-                            icon: const Icon(Icons.logout_rounded, size: 22),
-                            label: Text(
-                              'Sign Out',
-                              style: GoogleFonts.ubuntu(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  FlutterFlowTheme.of(context).tertiary,
-                              foregroundColor: Colors.white,
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        // Delete Account
-                        TextButton.icon(
-                          onPressed: () {},
-                          icon: Icon(Icons.delete_forever_rounded,
-                              color: FlutterFlowTheme.of(context).error,
-                              size: 18),
-                          label: Text(
-                            'Delete My Account',
-                            style: GoogleFonts.ubuntu(
-                              color: FlutterFlowTheme.of(context).error,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-          ),
         ),
       ),
     );

@@ -273,12 +273,9 @@ class _EmailConfirmDialogWidgetState extends State<EmailConfirmDialogWidget> {
                 ),
                 Align(
                   alignment: const AlignmentDirectional(0.0, 0.0),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    controller: _model.rowController,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Padding(
                           padding: const EdgeInsetsDirectional.fromSTEB(
@@ -367,7 +364,6 @@ class _EmailConfirmDialogWidgetState extends State<EmailConfirmDialogWidget> {
                       ].divide(const SizedBox(width: 10.0)),
                     ),
                   ),
-                ),
               ],
             ),
           ),

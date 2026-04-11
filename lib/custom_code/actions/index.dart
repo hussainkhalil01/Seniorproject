@@ -6,3 +6,4 @@ export 'forgot_password_custom_info.dart' show forgotPasswordCustomInfo;
 export 'track_user_presence.dart' show trackUserPresence;
 export 'email_verify_continue.dart' show emailVerifyContinue;
 export 'seed_contractors.dart' show seedContractors;
+export 'delete_account.dart' show deleteAccount;

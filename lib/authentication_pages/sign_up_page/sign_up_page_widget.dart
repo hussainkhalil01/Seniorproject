@@ -585,8 +585,8 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                             SizedBox(
                               width: double.infinity,
                               height: 52,
-                              child: ElevatedButton.icon(
-                                onPressed: () async {
+                              child: ElevatedButton(
+                                onPressed: _model.isLoading ? null : () async {
                                   var shouldSetState = false;
 
                                   String toTitleCase(String input) {
@@ -656,6 +656,8 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                   );
 
                                   if (FFAppState().confirmEmail) {
+                                    safeSetState(
+                                        () => _model.isLoading = true);
                                     _model.signUpResult =
                                         await actions.signUpWithCustomError(
                                       context, // ignore: use_build_context_synchronously
@@ -676,7 +678,6 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                   }
 
                                   if (_model.signUpResult == 'success') {
-                                    if (shouldSetState) safeSetState(() {});
                                     if (context.mounted) {
                                       context.goNamed(
                                         EmailVerifyPageWidget.routeName,
@@ -695,6 +696,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                     return;
                                   }
 
+                                  safeSetState(() => _model.isLoading = false);
                                   messenger.clearSnackBars();
                                   messenger.showSnackBar(
                                     SnackBar(
@@ -721,15 +723,6 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                   );
                                   if (shouldSetState) safeSetState(() {});
                                 },
-                                icon: const Icon(Icons.person_add_rounded,
-                                    size: 22),
-                                label: Text(
-                                  'Sign Up',
-                                  style: GoogleFonts.ubuntu(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor:
                                       FlutterFlowTheme.of(context).primary,
@@ -739,6 +732,32 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
+                                child: _model.isLoading
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.person_add_rounded,
+                                              size: 22),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Sign Up',
+                                            style: GoogleFonts.ubuntu(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
                             ),
                             const SizedBox(height: 20),
@@ -758,7 +777,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                 ),
                                 const SizedBox(width: 4),
                                 TextButton(
-                                  onPressed: () async {
+                                  onPressed: _model.isLoading ? null : () async {
                                     context.goNamed(
                                       SignInPageWidget.routeName,
                                       extra: <String, dynamic>{

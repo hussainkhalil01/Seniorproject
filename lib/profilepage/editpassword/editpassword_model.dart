@@ -1,35 +1,41 @@
 import '/flutter_flow/flutter_flow_util.dart';
-import '/index.dart';
 import 'editpassword_widget.dart' show EditpasswordWidget;
 import 'package:flutter/material.dart';
 
 class EditpasswordModel extends FlutterFlowModel<EditpasswordWidget> {
-  ///  State fields for stateful widgets in this page.
+  // Email (read-only)
+  FocusNode? emailFocusNode;
+  TextEditingController? emailController;
 
-  final formKey = GlobalKey<FormState>();
-  // State field(s) for TextField widget.
-  FocusNode? textFieldFocusNode1;
-  TextEditingController? textController1;
-  late bool passwordVisibility1;
-  String? Function(BuildContext, String?)? textController1Validator;
-  // State field(s) for TextField widget.
-  FocusNode? textFieldFocusNode2;
-  TextEditingController? textController2;
-  late bool passwordVisibility2;
-  String? Function(BuildContext, String?)? textController2Validator;
+  // Current password
+  FocusNode? currentPasswordFocusNode;
+  TextEditingController? currentPasswordController;
+  bool currentPasswordVisible = false;
+
+  // New password
+  FocusNode? newPasswordFocusNode;
+  TextEditingController? newPasswordController;
+  bool newPasswordVisible = false;
+
+  bool isSaving = false;
+
+  String? initialEmail;
+
+  bool get hasChanges =>
+      emailController?.text.trim() != initialEmail ||
+      currentPasswordController?.text.trim().isNotEmpty == true ||
+      newPasswordController?.text.trim().isNotEmpty == true;
 
   @override
-  void initState(BuildContext context) {
-    passwordVisibility1 = false;
-    passwordVisibility2 = false;
-  }
+  void initState(BuildContext context) {}
 
   @override
   void dispose() {
-    textFieldFocusNode1?.dispose();
-    textController1?.dispose();
-
-    textFieldFocusNode2?.dispose();
-    textController2?.dispose();
+    emailFocusNode?.dispose();
+    emailController?.dispose();
+    currentPasswordFocusNode?.dispose();
+    currentPasswordController?.dispose();
+    newPasswordFocusNode?.dispose();
+    newPasswordController?.dispose();
   }
 }

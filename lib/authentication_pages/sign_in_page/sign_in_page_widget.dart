@@ -374,9 +374,8 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                             SizedBox(
                               width: double.infinity,
                               height: 52,
-                              child: ElevatedButton.icon(
-                                onPressed: () async {
-                                  var shouldSetState = false;
+                              child: ElevatedButton(
+                                onPressed: _model.isLoading ? null : () async {
                                   _model.signInEmailFieldTextController
                                           .text =
                                       _model
@@ -396,6 +395,8 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                                       ScaffoldMessenger.of(context);
                                   final theme =
                                       FlutterFlowTheme.of(context);
+                                  safeSetState(
+                                      () => _model.isLoading = true);
                                   _model.signInResult = await actions
                                       .signInWithCustomError(
                                     context,
@@ -406,14 +407,12 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                                         .signInPasswordFieldTextController
                                         .text,
                                   );
-                                  shouldSetState = true;
                                   if (_model.signInResult == 'success') {
-                                    if (shouldSetState) {
-                                      safeSetState(() {});
-                                    }
                                     return;
                                   }
 
+                                  safeSetState(
+                                      () => _model.isLoading = false);
                                   messenger.clearSnackBars();
                                   messenger.showSnackBar(
                                     SnackBar(
@@ -438,20 +437,7 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                                       ),
                                     ),
                                   );
-                                  if (shouldSetState) {
-                                    safeSetState(() {});
-                                  }
-                                  return;
                                 },
-                                icon: const Icon(Icons.login_rounded,
-                                    size: 22),
-                                label: Text(
-                                  'Sign In',
-                                  style: GoogleFonts.ubuntu(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor:
                                       FlutterFlowTheme.of(context)
@@ -463,12 +449,38 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                                         BorderRadius.circular(12),
                                   ),
                                 ),
+                                child: _model.isLoading
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.login_rounded,
+                                              size: 22),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Sign In',
+                                            style: GoogleFonts.ubuntu(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
                             ),
                             const SizedBox(height: 8),
                             // Forgot Password
                             TextButton(
-                              onPressed: () async {
+                              onPressed: _model.isLoading ? null : () async {
                                 context.goNamed(
                                   ForgotPasswordPageWidget.routeName,
                                   extra: <String, dynamic>{
@@ -503,7 +515,7 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                             ),
                             // Create An Account
                             TextButton(
-                              onPressed: () async {
+                              onPressed: _model.isLoading ? null : () async {
                                 context.goNamed(
                                   SignUpPageWidget.routeName,
                                   extra: <String, dynamic>{

@@ -241,9 +241,10 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                             SizedBox(
                               width: double.infinity,
                               height: 52,
-                              child: ElevatedButton.icon(
-                                onPressed: FFAppState()
-                                        .forgotPasswordCooldownActive
+                              child: ElevatedButton(
+                                onPressed: (_model.isLoading ||
+                                        FFAppState()
+                                            .forgotPasswordCooldownActive)
                                     ? null
                                     : () async {
                                         _model.forgotPasswordEmailFieldTextController
@@ -267,6 +268,8 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                                         final theme =
                                             FlutterFlowTheme.of(context);
 
+                                        safeSetState(
+                                            () => _model.isLoading = true);
                                         _model.forgotPasswordResult =
                                             await actions
                                                 .forgotPasswordCustomInfo(
@@ -278,6 +281,8 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                                           await actions
                                               .forgotPasswordStartCooldown();
                                         }
+                                        safeSetState(
+                                            () => _model.isLoading = false);
 
                                         messenger.clearSnackBars();
                                         messenger.showSnackBar(
@@ -311,22 +316,6 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
 
                                         safeSetState(() {});
                                       },
-                                icon: Icon(
-                                  FFAppState().forgotPasswordCooldownActive
-                                      ? Icons.timer_outlined
-                                      : Icons.add_link_rounded,
-                                  size: 22,
-                                ),
-                                label: Text(
-                                  FFAppState().forgotPasswordCooldownActive
-                                      ? functions.cooldownText(FFAppState()
-                                          .forgotPasswordCooldownSeconds)
-                                      : 'Send Reset Link',
-                                  style: GoogleFonts.ubuntu(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor:
                                       FlutterFlowTheme.of(context).primary,
@@ -339,6 +328,42 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
+                                child: _model.isLoading
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            FFAppState()
+                                                    .forgotPasswordCooldownActive
+                                                ? Icons.timer_outlined
+                                                : Icons.add_link_rounded,
+                                            size: 22,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            FFAppState()
+                                                    .forgotPasswordCooldownActive
+                                                ? functions.cooldownText(
+                                                    FFAppState()
+                                                        .forgotPasswordCooldownSeconds)
+                                                : 'Send Reset Link',
+                                            style: GoogleFonts.ubuntu(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
                             ),
                             const SizedBox(height: 20),

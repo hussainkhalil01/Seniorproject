@@ -133,6 +133,9 @@ class SignUpPageModel extends FlutterFlowModel<SignUpPageWidget> {
   // Stores action output result for [Custom Action - signUpWithCustomError] action in SignUpButton widget.
   String? signUpResult;
 
+  // Whether the sign-up succeeded and we are navigating away.
+  bool isLoading = false;
+
   @override
   void initState(BuildContext context) {
     columnController = ScrollController();

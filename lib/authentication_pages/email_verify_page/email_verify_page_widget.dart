@@ -234,91 +234,78 @@ class _EmailVerifyPageWidgetState extends State<EmailVerifyPageWidget> {
                           SizedBox(
                             width: double.infinity,
                             height: 52,
-                            child: ElevatedButton.icon(
-                              onPressed:
-                                  FFAppState().emailVerifyCooldownActive
-                                      ? null
-                                      : () async {
-                                          final messenger =
-                                              ScaffoldMessenger.of(context);
-                                          final theme =
-                                              FlutterFlowTheme.of(context);
-                                          try {
-                                            await authManager
-                                                .sendEmailVerification();
-                                            await actions
-                                                .emailVerifyStartCooldown();
-                                            messenger.clearSnackBars();
-                                            messenger.showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Verification link sent. Please check your inbox or Spam folder',
-                                                  style: GoogleFonts.ubuntu(
-                                                    color: Colors.white,
-                                                    fontSize: 15.0,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                duration: const Duration(
-                                                    milliseconds: 4000),
-                                                backgroundColor: theme.success,
-                                                behavior:
-                                                    SnackBarBehavior.floating,
-                                                margin:
-                                                    const EdgeInsets.fromLTRB(
-                                                        16, 0, 16, 80),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
+                            child: ElevatedButton(
+                              onPressed: (_model.isResendLoading ||
+                                      FFAppState().emailVerifyCooldownActive)
+                                  ? null
+                                  : () async {
+                                      final messenger =
+                                          ScaffoldMessenger.of(context);
+                                      final theme =
+                                          FlutterFlowTheme.of(context);
+                                      safeSetState(
+                                          () => _model.isResendLoading = true);
+                                      try {
+                                        await authManager
+                                            .sendEmailVerification();
+                                        await actions
+                                            .emailVerifyStartCooldown();
+                                        messenger.clearSnackBars();
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Verification link sent. Please check your inbox or Spam folder',
+                                              style: GoogleFonts.ubuntu(
+                                                color: Colors.white,
+                                                fontSize: 15.0,
+                                                fontWeight: FontWeight.w600,
                                               ),
-                                            );
-                                          } catch (_) {
-                                            messenger.clearSnackBars();
-                                            messenger.showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Failed to send. Please try again',
-                                                  style: GoogleFonts.ubuntu(
-                                                    color: Colors.white,
-                                                    fontSize: 15.0,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                duration: const Duration(
-                                                    milliseconds: 4000),
-                                                backgroundColor: theme.error,
-                                                behavior:
-                                                    SnackBarBehavior.floating,
-                                                margin:
-                                                    const EdgeInsets.fromLTRB(
-                                                        16, 0, 16, 80),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            duration: const Duration(
+                                                milliseconds: 4000),
+                                            backgroundColor: theme.success,
+                                            behavior:
+                                                SnackBarBehavior.floating,
+                                            margin: const EdgeInsets.fromLTRB(
+                                                16, 0, 16, 80),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        );
+                                      } catch (_) {
+                                        messenger.clearSnackBars();
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Failed to send. Please try again',
+                                              style: GoogleFonts.ubuntu(
+                                                color: Colors.white,
+                                                fontSize: 15.0,
+                                                fontWeight: FontWeight.w600,
                                               ),
-                                            );
-                                          }
-                                        },
-                              icon: Icon(
-                                FFAppState().emailVerifyCooldownActive
-                                    ? Icons.timer_outlined
-                                    : Icons.add_link_rounded,
-                                size: 22,
-                              ),
-                              label: Text(
-                                FFAppState().emailVerifyCooldownActive
-                                    ? functions.cooldownText(FFAppState()
-                                        .emailVerifyCooldownSeconds)
-                                    : 'Resend Verification Link',
-                                style: GoogleFonts.ubuntu(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            duration: const Duration(
+                                                milliseconds: 4000),
+                                            backgroundColor: theme.error,
+                                            behavior:
+                                                SnackBarBehavior.floating,
+                                            margin: const EdgeInsets.fromLTRB(
+                                                16, 0, 16, 80),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        );
+                                      } finally {
+                                        safeSetState(() =>
+                                            _model.isResendLoading = false);
+                                      }
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
                                     FlutterFlowTheme.of(context).primary,
@@ -331,6 +318,40 @@ class _EmailVerifyPageWidgetState extends State<EmailVerifyPageWidget> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
+                              child: _model.isResendLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          FFAppState().emailVerifyCooldownActive
+                                              ? Icons.timer_outlined
+                                              : Icons.add_link_rounded,
+                                          size: 22,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          FFAppState().emailVerifyCooldownActive
+                                              ? functions.cooldownText(
+                                                  FFAppState()
+                                                      .emailVerifyCooldownSeconds)
+                                              : 'Resend Verification Link',
+                                          style: GoogleFonts.ubuntu(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -339,17 +360,20 @@ class _EmailVerifyPageWidgetState extends State<EmailVerifyPageWidget> {
                           SizedBox(
                             width: double.infinity,
                             height: 52,
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
+                            child: ElevatedButton(
+                              onPressed: _model.isLoading ? null : () async {
                                 final messenger =
                                     ScaffoldMessenger.of(context);
                                 final theme = FlutterFlowTheme.of(context);
+                                safeSetState(
+                                    () => _model.isLoading = true);
                                 _model.emailVerifyResult =
                                     await actions.emailVerifyContinue(context);
                                 if (_model.emailVerifyResult == 'success') {
-                                  safeSetState(() {});
                                   return;
                                 }
+                                safeSetState(
+                                    () => _model.isLoading = false);
                                 messenger.clearSnackBars();
                                 messenger.showSnackBar(
                                   SnackBar(
@@ -373,17 +397,7 @@ class _EmailVerifyPageWidgetState extends State<EmailVerifyPageWidget> {
                                     ),
                                   ),
                                 );
-                                safeSetState(() {});
                               },
-                              icon: const Icon(Icons.arrow_forward_rounded,
-                                  size: 22),
-                              label: Text(
-                                'Continue',
-                                style: GoogleFonts.ubuntu(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
                                     FlutterFlowTheme.of(context).secondary,
@@ -393,6 +407,33 @@ class _EmailVerifyPageWidgetState extends State<EmailVerifyPageWidget> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
+                              child: _model.isLoading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                            Icons.arrow_forward_rounded,
+                                            size: 22),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Continue',
+                                          style: GoogleFonts.ubuntu(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 20),
