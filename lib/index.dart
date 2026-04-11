@@ -12,6 +12,8 @@ export '/pages/my_orders_page/my_orders_page_widget.dart'
 export '/pages/chats_page/chats_page_widget.dart' show ChatsPageWidget;
 export '/profilepage/help_support/help_support_widget.dart'
     show HelpSupportWidget;
+export '/profilepage/privacy_policy/privacy_policy_widget.dart'
+    show PrivacyPolicyWidget;
 export '/profilepage/setting/setting_widget.dart' show SettingWidget;
 export '/profilepage/editprofile/editprofile_widget.dart'
     show EditprofileWidget;

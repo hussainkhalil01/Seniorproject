@@ -1,6 +1,7 @@
 ﻿import '/auth/firebase_auth/auth_util.dart';
 import '/backend/api_requests/api_calls.dart';
 import '/backend/backend.dart';
+import '/components/connectivity_wrapper.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -356,9 +357,10 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
         child: Scaffold(
           key: scaffoldKey,
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          body: (!loggedIn || currentUserDocument == null)
-              ? const SizedBox.shrink()
-              : SingleChildScrollView(
+          body: ConnectivityWrapper(
+            child: (!loggedIn || currentUserDocument == null)
+                ? const SizedBox.shrink()
+                : SingleChildScrollView(
               controller: _model.columnController,
               child: Column(
                 children: [
@@ -597,9 +599,9 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                 ),
                                 if (isProvider) ...[
                                   const SizedBox(height: 4),
-                                  // Categories label row — consistent with Title/About
+                                  // Categories row — same structure as _infoRow
                                   Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.only(bottom: 10),
                                     child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -611,102 +613,126 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                           size: 18,
                                         ),
                                         const SizedBox(width: 10),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Categories',
-                                              style: GoogleFonts.ubuntu(
-                                                fontSize: 12,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .secondaryText,
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Categories',
+                                                style: GoogleFonts.ubuntu(
+                                                  fontSize: 12,
+                                                  color: FlutterFlowTheme.of(
+                                                          context)
+                                                      .secondaryText,
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(height: 2),
+                                              Builder(builder: (context) {
+                                                const categoryIcons =
+                                                    <String, IconData>{
+                                                  'Contractors & Handymen':
+                                                      Icons.handyman_rounded,
+                                                  'Plumbers':
+                                                      Icons.plumbing_rounded,
+                                                  'Electricians':
+                                                      Icons
+                                                          .electrical_services_rounded,
+                                                  'Heating':
+                                                      Icons
+                                                          .local_fire_department_rounded,
+                                                  'Air Conditioning':
+                                                      Icons.ac_unit_rounded,
+                                                  'Locksmiths':
+                                                      Icons.vpn_key_rounded,
+                                                  'Painters':
+                                                      Icons.format_paint_rounded,
+                                                  'Tree Services':
+                                                      Icons.park_rounded,
+                                                  'Movers':
+                                                      Icons.local_shipping_rounded,
+                                                };
+                                                final cats = currentUserDocument
+                                                        ?.categories
+                                                        .toList() ??
+                                                    [];
+                                                if (cats.isEmpty) {
+                                                  return Text(
+                                                    'No categories selected',
+                                                    style: GoogleFonts.ubuntu(
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          FlutterFlowTheme.of(
+                                                                  context)
+                                                              .primaryText,
+                                                    ),
+                                                  );
+                                                }
+                                                return Wrap(
+                                                  spacing: 8,
+                                                  runSpacing: 8,
+                                                  alignment: WrapAlignment.start,
+                                                  children: cats
+                                                      .map((cat) => Container(
+                                                            padding: const EdgeInsets
+                                                                .symmetric(
+                                                                    horizontal:
+                                                                        12,
+                                                                    vertical: 6),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: FlutterFlowTheme
+                                                                      .of(context)
+                                                                  .primary,
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                if (categoryIcons
+                                                                    .containsKey(
+                                                                        cat)) ...[
+                                                                  Icon(
+                                                                    categoryIcons[
+                                                                        cat],
+                                                                    size: 14,
+                                                                    color: const Color(
+                                                                        0xFFF4A026),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      width: 5),
+                                                                ],
+                                                                Text(
+                                                                  cat,
+                                                                  style: GoogleFonts
+                                                                      .ubuntu(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize: 13,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ))
+                                                      .toList(),
+                                                );
+                                              }),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  // Read-only chips — selected categories only
-                                  Builder(builder: (context) {
-                                    const categoryIcons = <String, IconData>{
-                                      'Contractors & Handymen':
-                                          Icons.handyman_rounded,
-                                      'Plumbers': Icons.plumbing_rounded,
-                                      'Electricians':
-                                          Icons.electrical_services_rounded,
-                                      'Heating':
-                                          Icons.local_fire_department_rounded,
-                                      'Air Conditioning': Icons.ac_unit_rounded,
-                                      'Locksmiths': Icons.vpn_key_rounded,
-                                      'Painters': Icons.format_paint_rounded,
-                                      'Tree Services': Icons.park_rounded,
-                                      'Movers': Icons.local_shipping_rounded,
-                                    };
-                                    final cats = currentUserDocument
-                                            ?.categories
-                                            .toList() ??
-                                        [];
-                                    if (cats.isEmpty) {
-                                      return Text(
-                                        'No categories selected',
-                                        style: GoogleFonts.ubuntu(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: FlutterFlowTheme.of(context)
-                                              .primaryText,
-                                        ),
-                                      );
-                                    }
-                                    return Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      alignment: WrapAlignment.center,
-                                      children: cats
-                                          .map((cat) => Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .primary,
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    if (categoryIcons
-                                                        .containsKey(cat)) ...[
-                                                      Icon(
-                                                        categoryIcons[cat],
-                                                        size: 14,
-                                                        color: const Color(
-                                                            0xFFF4A026),
-                                                      ),
-                                                      const SizedBox(width: 5),
-                                                    ],
-                                                    Text(
-                                                      cat,
-                                                      style: GoogleFonts.ubuntu(
-                                                        color: Colors.white,
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ))
-                                          .toList(),
-                                    );
-                                  }),
                                 ],
                               ],
                             );
@@ -714,145 +740,26 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                         ),
                         const SizedBox(height: 12),
                         // Contact card
-                        _sectionCard(
-                          context: context,
-                          title: 'Contact',
-                          icon: Icons.contacts_rounded,
-                          children: [
-                            _infoRow(
-                              context: context,
-                              icon: Icons.phone_rounded,
-                              label: 'Phone Number',
-                              value: currentPhoneNumber.isNotEmpty
-                                  ? currentPhoneNumber
-                                  : 'Not provided',
-                              copyValue: currentPhoneNumber.isNotEmpty &&
-                                      currentPhoneNumber != 'Not provided'
-                                  ? currentPhoneNumber.replaceAll(' ', '')
-                                  : null,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Language preference card
                         AuthUserStreamWidget(
-                          builder: (context) {
-                            const languages = [
-                              {'code': '', 'label': 'No Translation', 'flag': '🌐'},
-                              {'code': 'ar', 'label': 'Arabic', 'flag': '🇸🇦'},
-                              {'code': 'en', 'label': 'English', 'flag': '🇬🇧'},
-                              {'code': 'hi', 'label': 'Hindi', 'flag': '🇮🇳'},
-                              {'code': 'ur', 'label': 'Urdu', 'flag': '🇵🇰'},
-                            ];
-                            final currentLang = valueOrDefault(
-                                currentUserDocument?.preferredLanguage, '');
-                            return _sectionCard(
-                              context: context,
-                              title: 'Chat Translation Language',
-                              icon: Icons.translate_rounded,
-                              children: [
-                                Text(
-                                  'Messages sent to you will be automatically translated into your chosen language.',
-                                  style: GoogleFonts.ubuntu(
-                                    fontSize: 12,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                DropdownButtonFormField<String>(
-                                  initialValue: currentLang,
-                                  decoration: InputDecoration(
-                                    contentPadding:
-                                        const EdgeInsets.symmetric(
-                                            horizontal: 14, vertical: 10),
-                                    border: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(10),
-                                      borderSide: BorderSide(
-                                          color: FlutterFlowTheme.of(context)
-                                              .accent4),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(10),
-                                      borderSide: BorderSide(
-                                          color: FlutterFlowTheme.of(context)
-                                              .accent4),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(10),
-                                      borderSide: BorderSide(
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary,
-                                          width: 1.5),
-                                    ),
-                                    filled: true,
-                                    fillColor: FlutterFlowTheme.of(context)
-                                        .primaryBackground,
-                                  ),
-                                  dropdownColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  style: GoogleFonts.ubuntu(
-                                    fontSize: 14,
-                                    color: FlutterFlowTheme.of(context)
-                                        .primaryText,
-                                  ),
-                                  items: languages
-                                      .map((lang) =>
-                                          DropdownMenuItem<String>(
-                                            value: lang['code'],
-                                            child: Text(
-                                              '${lang['flag']}  ${lang['label']}',
-                                              style: GoogleFonts.ubuntu(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ))
-                                      .toList(),
-                                  onChanged: (String? newLang) async {
-                                    if (newLang == null) return;
-                                    final messenger =
-                                        ScaffoldMessenger.of(context);
-                                    final theme =
-                                        FlutterFlowTheme.of(context);
-                                    await currentUserReference!.update({
-                                      'preferred_language': newLang,
-                                    });
-                                    messenger.clearSnackBars();
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          newLang.isEmpty
-                                              ? 'Translation disabled'
-                                              : 'Translation language saved',
-                                          style: GoogleFonts.ubuntu(
-                                            color: Colors.white,
-                                            fontSize: 15.0,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        duration: const Duration(
-                                            milliseconds: 4000),
-                                        backgroundColor: theme.success,
-                                        behavior: SnackBarBehavior.floating,
-                                        margin:
-                                            const EdgeInsets.fromLTRB(
-                                                16, 0, 16, 80),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            );
-                          },
+                          builder: (context) => _sectionCard(
+                            context: context,
+                            title: 'Contact',
+                            icon: Icons.contacts_rounded,
+                            children: [
+                              _infoRow(
+                                context: context,
+                                icon: Icons.phone_rounded,
+                                label: 'Phone Number',
+                                value: currentPhoneNumber.isNotEmpty
+                                    ? currentPhoneNumber
+                                    : 'Not provided',
+                                copyValue: currentPhoneNumber.isNotEmpty &&
+                                        currentPhoneNumber != 'Not provided'
+                                    ? currentPhoneNumber.replaceAll(' ', '')
+                                    : null,
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                         // Menu card
@@ -877,17 +784,22 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                 icon: Icons.person_rounded,
                                 label: 'Profile',
                                 color: FlutterFlowTheme.of(context).primary,
-                                onTap: () => context.pushNamed(
-                                  EditprofileWidget.routeName,
-                                  extra: <String, dynamic>{
-                                    '__transition_info__':
-                                        const TransitionInfo(
-                                      hasTransition: true,
-                                      transitionType: PageTransitionType.fade,
-                                      duration: Duration(milliseconds: 150),
-                                    ),
-                                  },
-                                ),
+                                onTap: () async {
+                                  await context.pushNamed(
+                                    EditprofileWidget.routeName,
+                                    extra: <String, dynamic>{
+                                      '__transition_info__':
+                                          const TransitionInfo(
+                                        hasTransition: true,
+                                        transitionType:
+                                            PageTransitionType.fade,
+                                        duration: Duration(milliseconds: 150),
+                                      ),
+                                    },
+                                  );
+                                  await authManager.refreshUser();
+                                  if (mounted) safeSetState(() {});
+                                },
                               ),
                               _menuTile(
                                 context: context,
@@ -928,9 +840,26 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                 icon: Icons.help_rounded,
                                 label: 'Help & Support',
                                 color: FlutterFlowTheme.of(context).primary,
-                                showDivider: false,
                                 onTap: () => context.pushNamed(
                                   HelpSupportWidget.routeName,
+                                  extra: <String, dynamic>{
+                                    '__transition_info__':
+                                        const TransitionInfo(
+                                      hasTransition: true,
+                                      transitionType: PageTransitionType.fade,
+                                      duration: Duration(milliseconds: 150),
+                                    ),
+                                  },
+                                ),
+                              ),
+                              _menuTile(
+                                context: context,
+                                icon: Icons.privacy_tip_rounded,
+                                label: 'Privacy Policy',
+                                color: FlutterFlowTheme.of(context).primary,
+                                showDivider: false,
+                                onTap: () => context.pushNamed(
+                                  PrivacyPolicyWidget.routeName,
                                   extra: <String, dynamic>{
                                     '__transition_info__':
                                         const TransitionInfo(
@@ -950,8 +879,10 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                 ],
               ),
             ),
+          ),
         ),
       ),
     );
   }
 }
+

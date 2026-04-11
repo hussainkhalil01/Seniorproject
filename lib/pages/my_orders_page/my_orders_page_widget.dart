@@ -1,4 +1,5 @@
 import '/auth/firebase_auth/auth_util.dart';
+import '/components/connectivity_wrapper.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -129,9 +130,11 @@ class _MyOrdersPageWidgetState extends State<MyOrdersPageWidget> {
               ),
             ),
           ),
-          body: isProvider
-              ? _OrdersTab(queryField: 'provider_uid', isProvider: true)
-              : _OrdersTab(queryField: 'client_uid', isProvider: false),
+          body: ConnectivityWrapper(
+            child: isProvider
+                ? _OrdersTab(queryField: 'provider_uid', isProvider: true)
+                : _OrdersTab(queryField: 'client_uid', isProvider: false),
+          ),
         ),
       ),
     );

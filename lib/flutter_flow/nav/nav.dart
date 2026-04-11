@@ -141,6 +141,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const HelpSupportWidget(),
         ),
         FFRoute(
+          name: PrivacyPolicyWidget.routeName,
+          path: PrivacyPolicyWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => const PrivacyPolicyWidget(),
+        ),
+        FFRoute(
           name: SettingWidget.routeName,
           path: SettingWidget.routePath,
           requireAuth: true,

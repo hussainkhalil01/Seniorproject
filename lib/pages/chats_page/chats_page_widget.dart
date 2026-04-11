@@ -1,5 +1,6 @@
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
+import '/components/connectivity_wrapper.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -73,7 +74,8 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
         child: Scaffold(
           key: scaffoldKey,
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          body: SafeArea(
+          body: ConnectivityWrapper(
+            child: SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -477,6 +479,7 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                 ),
               ],
             ),
+          ),
           ),
         ),
       ),

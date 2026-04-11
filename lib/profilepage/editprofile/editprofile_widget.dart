@@ -219,6 +219,7 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
     String? Function(String?)? validator,
   }) {
     return TextFormField(
+      enabled: !_model.isSaving,
       controller: controller,
       focusNode: focusNode,
       maxLines: maxLines,
@@ -280,10 +281,12 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
         FocusScope.of(context).unfocus();
         FocusManager.instance.primaryFocus?.unfocus();
       },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        body: AuthUserStreamWidget(
+      child: PopScope(
+        canPop: !_model.isSaving,
+        child: Scaffold(
+          key: scaffoldKey,
+          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+          body: AuthUserStreamWidget(
           builder: (context) => Form(
             key: _model.formKey,
             autovalidateMode: AutovalidateMode.disabled,
@@ -313,16 +316,19 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
                       child: Row(
                         children: [
                           // Back button
-                          Material(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
+                          Opacity(
+                            opacity: _model.isSaving ? 0.4 : 1.0,
+                            child: Material(
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
-                              onTap: () => context.pop(),
-                              child: const Padding(
-                                padding: EdgeInsets.all(8),
-                                child: Icon(Icons.arrow_back_rounded,
-                                    color: Colors.white, size: 22),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: _model.isSaving ? null : () => context.pop(),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: Icon(Icons.arrow_back_rounded,
+                                      color: Colors.white, size: 22),
+                                ),
                               ),
                             ),
                           ),
@@ -381,6 +387,10 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
                   ),
                 // ── SCROLLABLE FIELDS ─────────────────────────
                 Expanded(
+                  child: AbsorbPointer(
+                  absorbing: _model.isSaving,
+                  child: Opacity(
+                  opacity: _model.isSaving ? 0.5 : 1.0,
                   child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
                   child: Column(
@@ -542,8 +552,10 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
                             ChipData(
                                 'Movers', Icons.local_shipping_rounded),
                           ],
-                          onChanged: (val) =>
-                              safeSetState(() => _model.categoriesValues = val),
+                          onChanged: _model.isSaving
+                              ? null
+                              : (val) => safeSetState(
+                                  () => _model.categoriesValues = val),
                           selectedChipStyle: ChipStyle(
                             backgroundColor:
                                 FlutterFlowTheme.of(context).primary,
@@ -576,6 +588,8 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
                             currentUserDocument?.categories.toList() ?? [],
                           ),
                           wrapped: true,
+                          disabledColor:
+                              FlutterFlowTheme.of(context).accent4,
                         ),
                       ],
                     ),
@@ -587,12 +601,15 @@ class _EditprofileWidgetState extends State<EditprofileWidget> {
             ),
           ),
           ),
+          ),
+          ),
           ],
         ),
       ),
     ),
   ),
-);
+  ),
+  );
   }
 
   Widget _sectionCard({

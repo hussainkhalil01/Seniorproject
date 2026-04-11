@@ -26,6 +26,10 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
   late EditpasswordModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  String? _emailError;
+  String? _currentPasswordError;
+  String? _newPasswordError;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +52,13 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
 
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
+    // Clear previous inline errors
+    safeSetState(() {
+      _emailError = null;
+      _currentPasswordError = null;
+      _newPasswordError = null;
+    });
+
     final newEmail =
         _model.emailController!.text.trim().toLowerCase().replaceAll(' ', '');
     final currentPwd = _model.currentPasswordController!.text.trim();
@@ -57,7 +68,7 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
     final emailChanged = newEmail != _model.initialEmail;
     final passwordChange = newPwd.isNotEmpty;
 
-    void showError(String msg) {
+    void showSnackError(String msg) {
       messenger
         ..clearSnackBars()
         ..showSnackBar(SnackBar(
@@ -79,12 +90,12 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
     // Email validation
     if (emailChanged) {
       if (newEmail.isEmpty) {
-        showError('Please enter your email address');
+        safeSetState(() => _emailError = 'Please enter your email address');
         return;
       }
       if (!RegExp(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
           .hasMatch(newEmail)) {
-        showError('Please enter a valid email address');
+        safeSetState(() => _emailError = 'Please enter a valid email address');
         return;
       }
     }
@@ -92,34 +103,40 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
     // Password validation
     if (passwordChange) {
       if (newPwd.length < 8) {
-        showError('New password must be at least 8 characters');
+        safeSetState(
+            () => _newPasswordError = 'New password must be at least 8 characters');
         return;
       }
       if (!RegExp(r'^[A-Za-z0-9!@#$%^&*]{8,256}$').hasMatch(newPwd)) {
-        showError('Only A-Z, a-z, 0-9, !@#\$%^&* allowed');
+        safeSetState(
+            () => _newPasswordError = 'Only A-Z, a-z, 0-9, !@#\$%^&* allowed');
         return;
       }
       if (!RegExp(r'[a-z]').hasMatch(newPwd)) {
-        showError('Password must include a lowercase letter');
+        safeSetState(
+            () => _newPasswordError = 'Password must include a lowercase letter');
         return;
       }
       if (!RegExp(r'[A-Z]').hasMatch(newPwd)) {
-        showError('Password must include an uppercase letter');
+        safeSetState(
+            () => _newPasswordError = 'Password must include an uppercase letter');
         return;
       }
       if (!RegExp(r'[0-9]').hasMatch(newPwd)) {
-        showError('Password must include a number');
+        safeSetState(() => _newPasswordError = 'Password must include a number');
         return;
       }
       if (!RegExp(r'[!@#$%^&*]').hasMatch(newPwd)) {
-        showError('Password must include a symbol (!@#\$%^&*)');
+        safeSetState(
+            () => _newPasswordError = 'Password must include a symbol (!@#\$%^&*)');
         return;
       }
     }
 
     // Current password required for any change
     if (currentPwd.isEmpty) {
-      showError('Please enter your current password to save changes');
+      safeSetState(() => _currentPasswordError =
+          'Please enter your current password to save changes');
       return;
     }
 
@@ -167,44 +184,27 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
           ));
       }
     } on FirebaseAuthException catch (ex) {
-      String message;
+      if (!mounted) return;
       switch (ex.code) {
         case 'wrong-password':
         case 'invalid-credential':
-          message = 'Current password is incorrect';
+          safeSetState(
+              () => _currentPasswordError = 'Current password is incorrect');
           break;
         case 'email-already-in-use':
-          message = 'This email is already in use';
-          break;
-        case 'too-many-requests':
-          message = 'Too many attempts. Please try again later';
-          break;
-        case 'network-request-failed':
-          message = 'Network error. Please check your connection';
+          safeSetState(() => _emailError = 'This email is already in use');
           break;
         case 'weak-password':
-          message = 'New password is too weak';
+          safeSetState(() => _newPasswordError = 'New password is too weak');
+          break;
+        case 'too-many-requests':
+          showSnackError('Too many attempts. Please try again later');
+          break;
+        case 'network-request-failed':
+          showSnackError('Network error. Please check your connection');
           break;
         default:
-          message = 'Something went wrong. Please try again';
-      }
-      if (mounted) {
-        messenger
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(
-            content: Text(message,
-                style: GoogleFonts.ubuntu(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center),
-            duration: const Duration(milliseconds: 4000),
-            backgroundColor: FlutterFlowTheme.of(context).error,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-          ));
+          showSnackError('Something went wrong. Please try again');
       }
     } finally {
       safeSetState(() => _model.isSaving = false);
@@ -256,9 +256,11 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
     required IconData icon,
     Widget? suffixIcon,
     bool readOnly = false,
+    String? errorText,
   }) {
     return InputDecoration(
       labelText: label,
+      errorText: errorText,
       labelStyle: GoogleFonts.ubuntu(
           color: FlutterFlowTheme.of(context).secondaryText, fontSize: 14),
       prefixIcon:
@@ -305,7 +307,9 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
         FocusScope.of(context).unfocus();
         FocusManager.instance.primaryFocus?.unfocus();
       },
-      child: Scaffold(
+      child: PopScope(
+        canPop: !_model.isSaving,
+        child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
         body: Column(
@@ -334,16 +338,19 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                   child: Row(
                     children: [
                       // Back button
-                      Material(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
+                      Opacity(
+                        opacity: _model.isSaving ? 0.4 : 1.0,
+                        child: Material(
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
-                          onTap: () => context.pop(),
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(Icons.arrow_back_rounded,
-                                color: Colors.white, size: 22),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: _model.isSaving ? null : () => context.pop(),
+                            child: const Padding(
+                              padding: EdgeInsets.all(8),
+                              child: Icon(Icons.arrow_back_rounded,
+                                  color: Colors.white, size: 22),
+                            ),
                           ),
                         ),
                       ),
@@ -401,6 +408,10 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
 
             // ── Scrollable content ───────────────────────────────
             Expanded(
+              child: AbsorbPointer(
+              absorbing: _model.isSaving,
+              child: Opacity(
+              opacity: _model.isSaving ? 0.5 : 1.0,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
                 child: Column(
@@ -420,7 +431,9 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                           maxLength: 254,
                           maxLengthEnforcement:
                               MaxLengthEnforcement.enforced,
-                          onChanged: (_) => safeSetState(() {}),
+                          onChanged: (_) => safeSetState(() {
+                            _emailError = null;
+                          }),
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(
                                 RegExp(r'[a-zA-Z0-9@._+\-]')),
@@ -433,6 +446,7 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                             context: context,
                             label: 'Email Address',
                             icon: Icons.email_rounded,
+                            errorText: _emailError,
                           ),
                           cursorColor: FlutterFlowTheme.of(context).primary,
                         ),
@@ -442,7 +456,9 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                           controller: _model.currentPasswordController,
                           focusNode: _model.currentPasswordFocusNode,
                           obscureText: !_model.currentPasswordVisible,
-                          onChanged: (_) => safeSetState(() {}),
+                          onChanged: (_) => safeSetState(() {
+                            _currentPasswordError = null;
+                          }),
                           textInputAction: TextInputAction.next,
                           style: GoogleFonts.ubuntu(
                               fontSize: 15,
@@ -452,6 +468,7 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                             context: context,
                             label: 'Current Password',
                             icon: Icons.lock_outline_rounded,
+                            errorText: _currentPasswordError,
                             suffixIcon: InkWell(
                               onTap: () => safeSetState(() =>
                                   _model.currentPasswordVisible =
@@ -475,7 +492,9 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                           controller: _model.newPasswordController,
                           focusNode: _model.newPasswordFocusNode,
                           obscureText: !_model.newPasswordVisible,
-                          onChanged: (_) => safeSetState(() {}),
+                          onChanged: (_) => safeSetState(() {
+                            _newPasswordError = null;
+                          }),
                           textInputAction: TextInputAction.done,
                           style: GoogleFonts.ubuntu(
                               fontSize: 15,
@@ -485,6 +504,7 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                             context: context,
                             label: 'New Password',
                             icon: Icons.lock_reset_rounded,
+                            errorText: _newPasswordError,
                             suffixIcon: InkWell(
                               onTap: () => safeSetState(() =>
                                   _model.newPasswordVisible =
@@ -567,7 +587,7 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 16),
                         // Delete My Account
                         SizedBox(
                           width: double.infinity,
@@ -656,9 +676,12 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
                   ],
                 ),
               ),
+              ),
+              ),
             ),
           ],
         ),
+      ),
       ),
     );
   }

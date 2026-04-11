@@ -1,7 +1,7 @@
+import '/auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'setting_model.dart';
@@ -126,9 +126,9 @@ class _SettingWidgetState extends State<SettingWidget> {
               ),
             ),
             const SizedBox(height: 28),
-            // ── Privacy Policy Card ───────────────────────────
+            // ── Chat Translation Language ─────────────────────
             Text(
-              'Privacy Policy',
+              'Chat Translation Language',
               style: GoogleFonts.ubuntu(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -137,67 +137,110 @@ class _SettingWidgetState extends State<SettingWidget> {
               ),
             ),
             const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: theme.secondaryBackground,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: MarkdownBody(
-                data:
-                    '''### 1. Information We Collect
-
-*We collect information to provide better services to all our users. This includes:*
-
-**Account Information:** *When you register, we collect your full name, email address, and phone number.*
-
-**Profile Media:** *If you choose to upload a profile picture, it is stored securely in our database.*
-
-**Usage Data:** *We may collect information about how you interact with our services, such as button clicks and page views.*
-
-### 2. How We Use Information
-
-**Service Provision:** *We use your data to maintain and improve the application\'s core functions.*
-
-**User Communication:** *We use your contact details to facilitate support via the Help Center.*
-
-**App Notifications:** *We send alerts based on your preferences in the Settings menu.*
-
-### 3. Information Sharing
-
-**Explicit Consent:** *We only share personal data with third parties when you give us direct permission.*
-
-**Legal Compliance:** *We may disclose information if required by law to meet regulatory obligations.*
-
-### 4. Data Security
-
-**Firebase Infrastructure:** *Your account credentials and profile media are encrypted and stored using Firebase Authentication and Storage.*
-
-### 5. Your Rights
-
-**Data Management:** *You can modify your name and phone number at any time in the Edit Profile section.*
-
-**Account Removal:** *You have the right to request account deletion through our support team.*''',
-                selectable: true,
-                styleSheet: MarkdownStyleSheet(
-                  h3: GoogleFonts.ubuntu(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: theme.primaryText,
+            AuthUserStreamWidget(
+              builder: (context) {
+                const languages = [
+                  {'code': '', 'label': 'No Translation', 'flag': '🌐'},
+                  {'code': 'ar', 'label': 'Arabic', 'flag': '🇸🇦'},
+                  {'code': 'en', 'label': 'English', 'flag': '🇬🇧'},
+                  {'code': 'hi', 'label': 'Hindi', 'flag': '🇮🇳'},
+                  {'code': 'ur', 'label': 'Urdu', 'flag': '🇵🇰'},
+                ];
+                final currentLang = valueOrDefault(
+                    currentUserDocument?.preferredLanguage, '');
+                return Container(
+                  decoration: BoxDecoration(
+                    color: theme.secondaryBackground,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  p: GoogleFonts.ubuntu(
-                    fontSize: 13,
-                    color: theme.secondaryText,
-                    height: 1.55,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Messages sent to you will be automatically translated into your chosen language.',
+                        style: GoogleFonts.ubuntu(
+                          fontSize: 12,
+                          color: theme.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: currentLang,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide:
+                                BorderSide(color: theme.accent4),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide:
+                                BorderSide(color: theme.accent4),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                                color: theme.primary, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: theme.primaryBackground,
+                        ),
+                        dropdownColor: theme.secondaryBackground,
+                        style: GoogleFonts.ubuntu(
+                          fontSize: 14,
+                          color: theme.primaryText,
+                        ),
+                        items: languages
+                            .map((lang) => DropdownMenuItem<String>(
+                                  value: lang['code'],
+                                  child: Text(
+                                    '${lang['flag']}  ${lang['label']}',
+                                    style: GoogleFonts.ubuntu(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (String? newLang) async {
+                          if (newLang == null) return;
+                          final messenger = ScaffoldMessenger.of(context);
+                          await currentUserReference!.update({
+                            'preferred_language': newLang,
+                          });
+                          messenger
+                            ..clearSnackBars()
+                            ..showSnackBar(SnackBar(
+                              content: Text(
+                                newLang.isEmpty
+                                    ? 'Translation disabled'
+                                    : 'Translation language saved',
+                                style: GoogleFonts.ubuntu(
+                                  color: Colors.white,
+                                  fontSize: 15.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              duration:
+                                  const Duration(milliseconds: 4000),
+                              backgroundColor: theme.success,
+                              behavior: SnackBarBehavior.floating,
+                              margin: const EdgeInsets.fromLTRB(
+                                  16, 0, 16, 80),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ));
+                        },
+                      ),
+                    ],
                   ),
-                  strong: GoogleFonts.ubuntu(
-                    fontWeight: FontWeight.w600,
-                    color: theme.primaryText,
-                    fontSize: 13,
-                  ),
-                ),
-                onTapLink: (_, url, __) => launchURL(url!),
-              ),
+                );
+              },
             ),
             const SizedBox(height: 32),
           ],
