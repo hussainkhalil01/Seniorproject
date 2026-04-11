@@ -32,6 +32,46 @@ class _PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
     super.dispose();
   }
 
+  Widget _sectionCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    final theme = FlutterFlowTheme.of(context);
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: theme.secondary, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: GoogleFonts.ubuntu(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: theme.primaryText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: theme.accent4),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -39,35 +79,71 @@ class _PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: theme.primaryText, size: 20),
-          onPressed: () => context.safePop(),
-        ),
-        title: Text(
-          'Privacy Policy',
-          style: GoogleFonts.ubuntu(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: theme.primaryText,
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  FlutterFlowTheme.of(context).primary,
+                  FlutterFlowTheme.of(context).secondary,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: Row(
+                  children: [
+                    Material(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => context.safePop(),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(Icons.arrow_back_rounded,
+                              color: Colors.white, size: 22),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Privacy Policy',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.ubuntu(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 40, height: 40),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        controller: _model.scrollController,
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-        child: Container(
-          decoration: BoxDecoration(
-            color: theme.secondaryBackground,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: MarkdownBody(
-            data: '''### 1. Information We Collect
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _model.scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+              child: _sectionCard(
+                context: context,
+                title: 'Privacy Policy',
+                icon: Icons.privacy_tip_rounded,
+                children: [
+                  MarkdownBody(
+                    data: '''### 1. Information We Collect
 
 *We collect information to provide better services to all our users. This includes:*
 
@@ -100,27 +176,31 @@ class _PrivacyPolicyWidgetState extends State<PrivacyPolicyWidget> {
 **Data Management:** *You can modify your name and phone number at any time in the Edit Profile section.*
 
 **Account Removal:** *You have the right to request account deletion through our support team.*''',
-            selectable: true,
-            styleSheet: MarkdownStyleSheet(
-              h3: GoogleFonts.ubuntu(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: theme.primaryText,
-              ),
-              p: GoogleFonts.ubuntu(
-                fontSize: 13,
-                color: theme.secondaryText,
-                height: 1.55,
-              ),
-              strong: GoogleFonts.ubuntu(
-                fontWeight: FontWeight.w600,
-                color: theme.primaryText,
-                fontSize: 13,
+                    selectable: true,
+                    styleSheet: MarkdownStyleSheet(
+                      h3: GoogleFonts.ubuntu(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: theme.primaryText,
+                      ),
+                      p: GoogleFonts.ubuntu(
+                        fontSize: 13,
+                        color: theme.secondaryText,
+                        height: 1.55,
+                      ),
+                      strong: GoogleFonts.ubuntu(
+                        fontWeight: FontWeight.w600,
+                        color: theme.primaryText,
+                        fontSize: 13,
+                      ),
+                    ),
+                    onTapLink: (_, url, __) => launchURL(url!),
+                  ),
+                ],
               ),
             ),
-            onTapLink: (_, url, __) => launchURL(url!),
           ),
-        ),
+        ],
       ),
     );
   }
