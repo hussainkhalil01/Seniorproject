@@ -30,3 +30,7 @@ export '/pages/write_review_page/write_review_page_widget.dart'
     show WriteReviewPageWidget;
 export '/pages/contractors_map_page/contractors_map_page_widget.dart'
     show ContractorsMapPageWidget;
+export '/pages/ai_chat_page/ai_chat_page_widget.dart'
+    show AiChatPageWidget;
+export '/pages/admin/admin_dashboard_page.dart'
+    show AdminDashboardPage;

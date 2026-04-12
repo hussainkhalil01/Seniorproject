@@ -235,6 +235,18 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             ),
           ),
         ),
+        FFRoute(
+          name: AiChatPageWidget.routeName,
+          path: AiChatPageWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => const AiChatPageWidget(),
+        ),
+        FFRoute(
+          name: AdminDashboardPage.routeName,
+          path: AdminDashboardPage.routePath,
+          requireAuth: true,
+          builder: (context, params) => const AdminDashboardPage(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

@@ -13,11 +13,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'message_model.dart';
 export 'message_model.dart';
 
@@ -50,6 +52,11 @@ class _MessageWidgetState extends State<MessageWidget> {
   String? _recordedAudioPath;
   String? _playingAudioSource;
   ap.PlayerState _playerState = ap.PlayerState.stopped;
+
+  // Pending location to be sent when user taps the send button
+  Map<String, double>? _pendingLocation;
+
+  bool get _hasPendingLocation => _pendingLocation != null;
 
   bool get _hasTypedMessage =>
       (_model.textField11TextController.text).trim().isNotEmpty;
@@ -473,8 +480,76 @@ class _MessageWidgetState extends State<MessageWidget> {
           Navigator.pop(context);
           await _pickAndSendFile();
         },
+        onLocation: () async {
+          Navigator.pop(context);
+          await _sendLocation();
+        },
       ),
     );
+  }
+
+  // Step 1: get location and show preview — does NOT send yet
+  Future<void> _sendLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showSnackBar('Location services are disabled.');
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _showSnackBar('Location permission denied.');
+        return;
+      }
+
+      _showSnackBar('Getting your location...');
+
+      final pos = await Geolocator.getCurrentPosition(
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.high));
+
+      if (!mounted) return;
+      setState(() {
+        _pendingLocation = {'lat': pos.latitude, 'lng': pos.longitude};
+      });
+    } catch (e) {
+      _showSnackBar('Failed to get location.');
+    }
+  }
+
+  // Step 2: actually send — called by the send button
+  Future<void> _sendPendingLocation() async {
+    if (_pendingLocation == null) return;
+    final lat = _pendingLocation!['lat']!;
+    final lng = _pendingLocation!['lng']!;
+    setState(() => _pendingLocation = null);
+
+    try {
+      final locationText = '__location__:$lat,$lng,My Location';
+
+      await ChatMessagesRecord.collection.doc().set(
+          createChatMessagesRecordData(
+            user: currentUserReference,
+            chat: widget.chatRef,
+            text: locationText,
+            timestamp: getCurrentTimestamp,
+            isRead: false,
+          ));
+
+      final chatUpdate = createChatsRecordData(
+        lastMessageTime: getCurrentTimestamp,
+        lastMessageSentBy: currentUserReference,
+        lastMessage: '📍 Location',
+      );
+      chatUpdate['last_message_seen_by'] = [currentUserReference];
+      await widget.chatRef!.update(chatUpdate);
+    } catch (e) {
+      _showSnackBar('Failed to send location.');
+    }
   }
 
   Future<void> _pickAndSendImage(ImageSource source) async {
@@ -857,6 +932,68 @@ class _MessageWidgetState extends State<MessageWidget> {
       );
     }
 
+    // ── Location preview ───────────────────────────────────────────────
+    if (_hasPendingLocation) {
+      final lat = _pendingLocation!['lat']!;
+      final lng = _pendingLocation!['lng']!;
+      final theme = FlutterFlowTheme.of(context);
+      return Container(
+        decoration: BoxDecoration(
+          color: theme.primaryBackground,
+          borderRadius: BorderRadius.circular(16.0),
+          border: Border.all(color: theme.alternate),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+        child: Row(
+          children: [
+            Container(
+              width: 36.0,
+              height: 36.0,
+              decoration: BoxDecoration(
+                color: const Color(0xFF26A69A).withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.location_on_rounded,
+                  color: Color(0xFF26A69A), size: 20.0),
+            ),
+            const SizedBox(width: 10.0),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'My Location',
+                    style: theme.bodyMedium.override(
+                      font: GoogleFonts.ubuntu(fontWeight: FontWeight.w600),
+                      letterSpacing: 0,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}',
+                    style: theme.bodySmall.override(
+                      font: GoogleFonts.ubuntu(),
+                      color: theme.secondaryText,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              'Tap ➤ to send',
+              style: theme.bodySmall.override(
+                font: GoogleFonts.ubuntu(),
+                color: theme.secondaryText,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_hasRecordedPreview) {
       final previewPath = _recordedAudioPath!;
       final isPlayingPreview = _playingAudioSource == previewPath &&
@@ -1164,6 +1301,18 @@ class _MessageWidgetState extends State<MessageWidget> {
       );
     }
 
+    // ── Location card ─────────────────────────────────────────────────
+    if (message.text.startsWith('__location__:')) {
+      final parts =
+          message.text.substring('__location__:'.length).split(',');
+      if (parts.length >= 2) {
+        final lat = double.tryParse(parts[0]) ?? 0.0;
+        final lng = double.tryParse(parts[1]) ?? 0.0;
+        final label = parts.length >= 3 ? parts.sublist(2).join(',') : 'Location';
+        return _LocationBubble(lat: lat, lng: lng, label: label, isMine: isMine);
+      }
+    }
+
     // ── Order / Invoice card ────────────────────────────────────────────
     if (message.text.startsWith('__order__:')) {
       final orderId = message.text.substring('__order__:'.length);
@@ -1208,6 +1357,11 @@ class _MessageWidgetState extends State<MessageWidget> {
   }
 
   Future<void> _handlePrimaryAction() async {
+    if (_hasPendingLocation) {
+      await _sendPendingLocation();
+      return;
+    }
+
     if (_hasTypedMessage) {
       await _sendTextMessage();
       return;
@@ -1625,14 +1779,16 @@ class _MessageWidgetState extends State<MessageWidget> {
                                   ? null
                                   : _hasRecordedPreview && !_isUploadingVoice
                                       ? _discardRecordedVoice
-                                      : !_hasRecordedPreview
-                                          ? _showAttachmentSheet
-                                          : null,
+                                      : _hasPendingLocation
+                                          ? () => setState(() => _pendingLocation = null)
+                                          : !_hasRecordedPreview
+                                              ? _showAttachmentSheet
+                                              : null,
                               child: Icon(
-                                _hasRecordedPreview
+                                _hasRecordedPreview || _hasPendingLocation
                                     ? Icons.delete_outline_rounded
                                     : Icons.attach_file_rounded,
-                                color: _hasRecordedPreview
+                                color: _hasRecordedPreview || _hasPendingLocation
                                     ? FlutterFlowTheme.of(context).error
                                     : _isRecording
                                         ? FlutterFlowTheme.of(context)
@@ -1671,7 +1827,7 @@ class _MessageWidgetState extends State<MessageWidget> {
                                       ),
                                     )
                                   : Icon(
-                                      _hasTypedMessage || _hasRecordedPreview
+                                      _hasTypedMessage || _hasRecordedPreview || _hasPendingLocation
                                           ? Icons.send_rounded
                                           : _isRecording
                                               ? Icons.stop_rounded
@@ -1941,12 +2097,14 @@ class _AttachmentSheet extends StatelessWidget {
     required this.onGallery,
     required this.onVideo,
     required this.onFile,
+    required this.onLocation,
   });
 
   final VoidCallback onCamera;
   final VoidCallback onGallery;
   final VoidCallback onVideo;
   final VoidCallback onFile;
+  final VoidCallback onLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -1979,6 +2137,7 @@ class _AttachmentSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          // Row 1: Camera, Gallery, Video, File
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -2008,11 +2167,217 @@ class _AttachmentSheet extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          // Row 2: Location
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _AttachOption(
+                icon: Icons.location_on_rounded,
+                label: 'Location',
+                color: const Color(0xFF26A69A),
+                onTap: onLocation,
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
         ],
       ),
     );
   }
+}
+
+// ── Location bubble ─────────────────────────────────────────────────────────
+
+class _LocationBubble extends StatelessWidget {
+  const _LocationBubble({
+    required this.lat,
+    required this.lng,
+    required this.label,
+    required this.isMine,
+  });
+
+  final double lat;
+  final double lng;
+  final String label;
+  final bool isMine;
+
+  Future<void> _openMap() async {
+    final uri =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final bgColor = isMine
+        ? Colors.white.withValues(alpha: 0.15)
+        : theme.secondaryBackground;
+    final textColor = isMine ? Colors.white : theme.primaryText;
+    final subColor = isMine
+        ? Colors.white.withValues(alpha: 0.75)
+        : theme.secondaryText;
+    final iconColor = isMine ? Colors.white : const Color(0xFF26A69A);
+    final iconBg = isMine
+        ? Colors.white.withValues(alpha: 0.18)
+        : const Color(0xFF26A69A).withValues(alpha: 0.12);
+
+    return GestureDetector(
+      onTap: _openMap,
+      child: Container(
+        width: 220,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: isMine ? null : Border.all(color: theme.alternate, width: 1),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Map illustration area
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Container(
+                width: 220,
+                height: 110,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isMine
+                        ? [
+                            Colors.white.withValues(alpha: 0.18),
+                            Colors.white.withValues(alpha: 0.08),
+                          ]
+                        : [
+                            const Color(0xFF26A69A).withValues(alpha: 0.12),
+                            const Color(0xFF26A69A).withValues(alpha: 0.05),
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Grid lines to suggest a map
+                    CustomPaint(
+                      size: const Size(220, 110),
+                      painter: _MapGridPainter(
+                          lineColor: isMine
+                              ? Colors.white.withValues(alpha: 0.12)
+                              : const Color(0xFF26A69A).withValues(alpha: 0.15)),
+                    ),
+                    // Pin icon
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: iconBg,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Icon(Icons.location_on_rounded,
+                              color: iconColor, size: 24),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: iconBg,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'Tap to open map',
+                            style: GoogleFonts.ubuntu(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: iconColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Bottom info strip
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration:
+                        BoxDecoration(color: iconBg, shape: BoxShape.circle),
+                    child: Icon(Icons.location_on_rounded,
+                        color: iconColor, size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.ubuntu(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}',
+                          style: GoogleFonts.ubuntu(
+                              fontSize: 10, color: subColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Simple grid painter to give the map illustration context
+class _MapGridPainter extends CustomPainter {
+  final Color lineColor;
+  const _MapGridPainter({required this.lineColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1.0;
+    for (double x = 0; x < size.width; x += 28) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += 22) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MapGridPainter old) => old.lineColor != lineColor;
 }
 
 class _AttachOption extends StatelessWidget {

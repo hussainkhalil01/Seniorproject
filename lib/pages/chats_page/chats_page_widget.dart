@@ -11,6 +11,94 @@ import 'package:google_fonts/google_fonts.dart';
 import 'chats_page_model.dart';
 export 'chats_page_model.dart';
 
+// ── AI Assistant pinned tile ──────────────────────────────
+class _AiAssistantTile extends StatelessWidget {
+  const _AiAssistantTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return InkWell(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      onTap: () => context.pushNamed(AiChatPageWidget.routeName),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Gradient bot avatar
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [theme.primary, theme.secondary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Icon(Icons.smart_toy_rounded,
+                  color: Colors.white, size: 26),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'AI Assistant',
+                        style: theme.bodyLarge.override(
+                          font: GoogleFonts.ubuntu(
+                              fontWeight: FontWeight.w600),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: theme.primary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'AI',
+                          style: GoogleFonts.ubuntu(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Find the best contractor for your needs',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.bodySmall.override(
+                      font: GoogleFonts.ubuntu(),
+                      color: theme.secondaryText,
+                      fontSize: 13,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ChatsPageWidget extends StatefulWidget {
   const ChatsPageWidget({super.key});
 
@@ -198,36 +286,68 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                           .toList();
 
                       if (chats.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.chat_bubble_outline_rounded,
-                                  size: 60,
-                                  color: FlutterFlowTheme.of(context)
-                                      .secondaryText
-                                      .withOpacity(0.35)),
-                              const SizedBox(height: 14),
-                              Text('No conversations yet',
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: GoogleFonts.ubuntu(),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              child: _AiAssistantTile(),
+                            ),
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: FlutterFlowTheme.of(context)
+                                  .alternate
+                                  .withOpacity(.5),
+                            ),
+                            Expanded(
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.chat_bubble_outline_rounded,
+                                        size: 60,
                                         color: FlutterFlowTheme.of(context)
-                                            .secondaryText,
-                                        letterSpacing: 0,
-                                      )),
-                            ],
-                          ),
+                                            .secondaryText
+                                            .withOpacity(0.35)),
+                                    const SizedBox(height: 14),
+                                    Text('No conversations yet',
+                                        style: FlutterFlowTheme.of(context)
+                                            .titleSmall
+                                            .override(
+                                              font: GoogleFonts.ubuntu(),
+                                              color: FlutterFlowTheme.of(context)
+                                                  .secondaryText,
+                                              letterSpacing: 0,
+                                            )),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         );
                       }
 
                       return ListView.builder(
                         controller: _model.columnController,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: chats.length,
+                        itemCount: chats.length + 2, // +2 for AI tile + divider
                         itemBuilder: (context, index) {
-                          final chat = chats[index];
+                          // First item: AI Assistant tile
+                          if (index == 0) {
+                            return const _AiAssistantTile();
+                          }
+                          // Second item: divider
+                          if (index == 1) {
+                            return Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: FlutterFlowTheme.of(context)
+                                  .alternate
+                                  .withOpacity(.5),
+                            );
+                          }
+                          final chat = chats[index - 2];
                           final isUserA =
                               currentUserReference == chat.userA;
                           final otherRef =
