@@ -1,4 +1,9 @@
-﻿import '/flutter_flow/flutter_flow_theme.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '/auth/firebase_auth/auth_util.dart';
+import '/backend/schema/chats_record.dart';
+import '/chats/message/message_widget.dart';
+import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -31,7 +36,7 @@ class _HelpSupportWidgetState extends State<HelpSupportWidget> {
     _Faq(
       question: 'How do I post a job or project?',
       answer:
-          'Navigate to the Home tab and tap the "Post a Job" button. Fill in the project title, description, budget, and required skills, then submit. Contractors will be able to apply within minutes.',
+          'To post a job or request a service, please contact support. You can reach us using Live Chat or Email Support. Our team will assist you in creating and submitting your request.',
     ),
     _Faq(
       question: 'How are payments handled?',
@@ -55,6 +60,97 @@ class _HelpSupportWidgetState extends State<HelpSupportWidget> {
   void dispose() {
     _model.dispose();
     super.dispose();
+  }
+
+  Future<void> _openLiveChat(BuildContext ctx) async {
+    final theme = FlutterFlowTheme.of(ctx);
+    // Don't let admin chat with themselves
+    final currentUid = currentUserUid;
+    final adminQuery = await FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'admin')
+        .limit(1)
+        .get();
+
+    if (adminQuery.docs.isEmpty) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+          content: Text('Support is currently unavailable',
+              style: GoogleFonts.ubuntu(color: Colors.white)),
+          backgroundColor: theme.error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+      return;
+    }
+
+    final adminDoc = adminQuery.docs.first;
+    final adminUid = adminDoc.id;
+    final adminData = adminDoc.data();
+    final adminRef =
+        FirebaseFirestore.instance.collection('users').doc(adminUid);
+
+    if (currentUid == adminUid) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+          content: Text('You are the admin — you cannot chat with yourself',
+              style: GoogleFonts.ubuntu(color: Colors.white)),
+          backgroundColor: theme.error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+      return;
+    }
+
+    // Check for existing chat (either direction)
+    final chatKey1 = '${currentUid}_$adminUid';
+    final chatKey2 = '${adminUid}_$currentUid';
+    final existing = await FirebaseFirestore.instance
+        .collection('chats')
+        .where('chat_key', whereIn: [chatKey1, chatKey2])
+        .limit(1)
+        .get();
+
+    DocumentReference chatRef;
+    if (existing.docs.isNotEmpty) {
+      chatRef = existing.docs.first.reference;
+    } else {
+      // Create new chat
+      final newRef = ChatsRecord.collection.doc();
+      await newRef.set(createChatsRecordData(
+        userA: currentUserReference,
+        userB: adminRef,
+        lastMessageTime: getCurrentTimestamp,
+        lastMessageSentBy: currentUserReference,
+        lastMessage: '',
+        image: false,
+        chatKey: chatKey1,
+        userAName: valueOrDefault(currentUserDocument?.fullName, ''),
+        userBName: adminData['display_name'] as String? ?? 'Support',
+        userAPhoto: currentUserPhoto,
+        userBPhoto: adminData['photo_url'] as String? ?? '',
+      ));
+      chatRef = newRef;
+    }
+
+    if (!ctx.mounted) return;
+    ctx.pushNamed(
+      MessageWidget.routeName,
+      queryParameters: {
+        'chatRef': serializeParam(chatRef, ParamType.DocumentReference),
+      },
+      extra: {
+        '__transition_info__': const TransitionInfo(
+          hasTransition: true,
+          transitionType: PageTransitionType.rightToLeft,
+          duration: Duration(milliseconds: 200),
+        ),
+      },
+    );
   }
 
   Widget _sectionCard({
@@ -269,8 +365,18 @@ class _HelpSupportWidgetState extends State<HelpSupportWidget> {
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () =>
-                                  launchURL('mailto:amabild9371@gmail.com'),
+                              onPressed: () async {
+                                final uri = Uri(
+                                  scheme: 'mailto',
+                                  path: 'amanbuild9371@gmail.com',
+                                  queryParameters: {
+                                    'subject': 'Support Request - Aman Build',
+                                  },
+                                );
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                }
+                              },
                               icon: Icon(Icons.email_outlined,
                                   size: 16, color: theme.primaryText),
                               label: Text(
@@ -295,7 +401,7 @@ class _HelpSupportWidgetState extends State<HelpSupportWidget> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {},
+                              onPressed: () => _openLiveChat(context),
                               icon: const Icon(Icons.chat_bubble_outline_rounded,
                                   size: 16, color: Colors.white),
                               label: Text(

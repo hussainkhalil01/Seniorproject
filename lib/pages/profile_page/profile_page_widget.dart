@@ -501,9 +501,14 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                               child: Text(
                                 valueOrDefault(
                                             currentUserDocument?.role, '') ==
-                                        'client'
-                                    ? 'Client'
-                                    : 'Service Provider',
+                                        'admin'
+                                    ? 'Support'
+                                    : valueOrDefault(
+                                                currentUserDocument?.role,
+                                                '') ==
+                                            'client'
+                                        ? 'Client'
+                                        : 'Service Provider',
                                 style: GoogleFonts.ubuntu(
                                   color: Colors.white,
                                   fontSize: 13,
@@ -835,25 +840,6 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                   },
                                 ),
                               ),
-                              if (currentUserDocument?.role == 'admin')
-                                _menuTile(
-                                  context: context,
-                                  icon: Icons.admin_panel_settings_rounded,
-                                  label: 'Admin Dashboard',
-                                  color: const Color(0xFF1F4F8B),
-                                  onTap: () => context.pushNamed(
-                                    AdminDashboardPage.routeName,
-                                    extra: <String, dynamic>{
-                                      '__transition_info__':
-                                          const TransitionInfo(
-                                        hasTransition: true,
-                                        transitionType:
-                                            PageTransitionType.rightToLeft,
-                                        duration: Duration(milliseconds: 200),
-                                      ),
-                                    },
-                                  ),
-                                ),
                               _menuTile(
                                 context: context,
                                 icon: Icons.help_rounded,

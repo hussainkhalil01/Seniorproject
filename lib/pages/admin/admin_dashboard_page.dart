@@ -26,6 +26,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   static const _tabs = [
     (icon: Icons.dashboard_rounded, label: 'Overview'),
+    (icon: Icons.manage_accounts_rounded, label: 'Clients'),
     (icon: Icons.people_rounded, label: 'Contractors'),
     (icon: Icons.star_rounded, label: 'Reviews'),
     (icon: Icons.chat_bubble_rounded, label: 'Chats'),
@@ -95,10 +96,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       appBar: AppBar(
         backgroundColor: theme.primary,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white),
-          onPressed: () => context.pop(),
-        ),
+        automaticallyImplyLeading: false,
         title: Text(
           'Admin Dashboard',
           style: GoogleFonts.ubuntu(
@@ -162,6 +160,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         controller: _tab,
         children: const [
           _OverviewTab(),
+          _UsersTab(),
           _ContractorsTab(),
           _ReviewsTab(),
           _ChatsTab(),
@@ -324,7 +323,7 @@ class _OverviewTab extends StatelessWidget {
             _statCard(ctx, 'Total Contractors',
                 contractors.length.toString(), Icons.build_rounded, theme.primary),
             const SizedBox(height: 10),
-            _statCard(ctx, 'Total Users (clients)', clients.length.toString(),
+            _statCard(ctx, 'Total Clients', clients.length.toString(),
                 Icons.person_rounded, const Color(0xFF26A69A)),
             const SizedBox(height: 10),
             _statCard(ctx, 'Total Orders', orders.length.toString(),
@@ -360,10 +359,6 @@ class _OverviewTab extends StatelessWidget {
                     _buildStatusBar(ctx, 'Fully Paid',
                         statusCounts['paid'] ?? 0, orders.length,
                         const Color(0xFF26A69A)),
-                    const SizedBox(height: 10),
-                    _buildStatusBar(ctx, 'In Progress',
-                        statusCounts['in_progress'] ?? 0, orders.length,
-                        const Color(0xFF7B1FA2)),
                     const SizedBox(height: 10),
                     _buildStatusBar(ctx, 'Completed',
                         statusCounts['completed'] ?? 0, orders.length,
@@ -1297,18 +1292,340 @@ class _ChatCard extends StatelessWidget {
   Future<void> _openChat(BuildContext ctx) async {
     await _logAdminAction('admin_view_chat', {'chat_id': chatId});
     if (!ctx.mounted) return;
-    ctx.pushNamed(
-      MessageWidget.routeName,
-      queryParameters: {
-        'chatRef': serializeParam(chatRef, ParamType.DocumentReference),
-      },
-      extra: {
-        '__transition_info__': const TransitionInfo(
-          hasTransition: true,
-          transitionType: PageTransitionType.rightToLeft,
-          duration: Duration(milliseconds: 200),
+    final theme = FlutterFlowTheme.of(ctx);
+    final userA = data['user_a_name'] as String? ?? 'User A';
+    final userB = data['user_b_name'] as String? ?? 'User B';
+
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.88,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (_, ctrl) => Container(
+          decoration: BoxDecoration(
+            color: theme.primaryBackground,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(children: [
+            // Handle
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: theme.alternate,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 14),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('$userA  ↔  $userB',
+                          style: GoogleFonts.ubuntu(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: theme.primaryText),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: theme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text('Read-only · Admin view',
+                            style: GoogleFonts.ubuntu(
+                                fontSize: 11,
+                                color: theme.primary,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                ),
+              ]),
+            ),
+            Divider(height: 20, color: theme.alternate),
+            // Messages list
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('chat_messages')
+                    .where('chat', isEqualTo: chatRef)
+                    .orderBy('timestamp', descending: false)
+                    .snapshots(),
+                builder: (ctx2, snap) {
+                  if (!snap.hasData) {
+                    return Center(
+                        child: SpinKitFadingCube(
+                            color: theme.primary, size: 28));
+                  }
+                  final docs = snap.data!.docs;
+                  if (docs.isEmpty) {
+                    return Center(
+                      child: Text('No messages yet',
+                          style: GoogleFonts.ubuntu(
+                              color: theme.secondaryText)),
+                    );
+                  }
+                  return ListView.builder(
+                    controller: ctrl,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    itemCount: docs.length,
+                    itemBuilder: (_, i) {
+                      final msg =
+                          docs[i].data() as Map<String, dynamic>;
+                      final text = msg['text'] as String? ?? '';
+                      final image = msg['image'] as String? ?? '';
+                      final video = msg['video'] as String? ?? '';
+                      final audio = msg['audio'] as String? ?? '';
+                      final ts = (msg['timestamp'] as Timestamp?)
+                          ?.toDate();
+                      final senderRef =
+                          msg['user'] as DocumentReference?;
+                      final userARef =
+                          data['user_a'] as DocumentReference?;
+                      final isA = senderRef?.id == userARef?.id;
+                      final senderLabel = isA ? userA : userB;
+
+                      // Classify message type
+                      final isLocation =
+                          text.startsWith('__location__:');
+                      final isOrder =
+                          text.startsWith('__order__:');
+                      final isPayment =
+                          text.startsWith('__payment__') ||
+                              text.startsWith('Payment request:');
+                      final isImage = image.isNotEmpty;
+                      final isVideo = video.isNotEmpty;
+                      final isAudio = audio.isNotEmpty;
+                      final isEmpty = text.isEmpty &&
+                          !isImage && !isVideo && !isAudio;
+                      if (isEmpty) return const SizedBox.shrink();
+
+                      // Build bubble content
+                      Widget bubbleContent;
+                      if (isLocation) {
+                        bubbleContent = Row(children: [
+                          Icon(Icons.location_on_rounded,
+                              size: 16, color: theme.primary),
+                          const SizedBox(width: 6),
+                          Text('Shared a location',
+                              style: GoogleFonts.ubuntu(
+                                  fontSize: 13,
+                                  color: theme.primaryText,
+                                  fontStyle: FontStyle.italic)),
+                        ]);
+                      } else if (isOrder) {
+                        final oid = text
+                            .substring('__order__:'.length)
+                            .substring(0, text
+                                .substring('__order__:'.length)
+                                .length
+                                .clamp(0, 8))
+                            .toUpperCase();
+                        bubbleContent = Row(children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4A026)
+                                  .withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                                Icons.receipt_long_rounded,
+                                size: 14,
+                                color: Color(0xFFF4A026)),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: [
+                                Text('Order Request',
+                                    style: GoogleFonts.ubuntu(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: theme.primaryText)),
+                                Text('#$oid',
+                                    style: GoogleFonts.ubuntu(
+                                        fontSize: 11,
+                                        color: theme.secondaryText)),
+                              ],
+                            ),
+                          ),
+                        ]);
+                      } else if (isPayment) {
+                        final label = isPayment && text.startsWith('Payment request:')
+                            ? text
+                            : 'Payment request';
+                        bubbleContent = Row(children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CAF50)
+                                  .withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.payments_rounded,
+                                size: 14, color: Color(0xFF4CAF50)),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(label,
+                                style: GoogleFonts.ubuntu(
+                                    fontSize: 13,
+                                    color: theme.primaryText)),
+                          ),
+                        ]);
+                      } else if (isImage) {
+                        bubbleContent = Row(children: [
+                          Icon(Icons.image_rounded,
+                              size: 16, color: theme.secondaryText),
+                          const SizedBox(width: 6),
+                          Text('📷 Photo',
+                              style: GoogleFonts.ubuntu(
+                                  fontSize: 13,
+                                  color: theme.primaryText,
+                                  fontStyle: FontStyle.italic)),
+                        ]);
+                      } else if (isVideo) {
+                        bubbleContent = Row(children: [
+                          Icon(Icons.videocam_rounded,
+                              size: 16, color: theme.secondaryText),
+                          const SizedBox(width: 6),
+                          Text('🎥 Video',
+                              style: GoogleFonts.ubuntu(
+                                  fontSize: 13,
+                                  color: theme.primaryText,
+                                  fontStyle: FontStyle.italic)),
+                        ]);
+                      } else if (isAudio) {
+                        bubbleContent = Row(children: [
+                          Icon(Icons.mic_rounded,
+                              size: 16, color: theme.secondaryText),
+                          const SizedBox(width: 6),
+                          Text('🎵 Voice message',
+                              style: GoogleFonts.ubuntu(
+                                  fontSize: 13,
+                                  color: theme.primaryText,
+                                  fontStyle: FontStyle.italic)),
+                        ]);
+                      } else {
+                        bubbleContent = Text(text,
+                            style: GoogleFonts.ubuntu(
+                                fontSize: 14,
+                                color: theme.primaryText));
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Column(
+                          crossAxisAlignment: isA
+                              ? CrossAxisAlignment.start
+                              : CrossAxisAlignment.end,
+                          children: [
+                            // Sender label
+                            Padding(
+                              padding: EdgeInsets.only(
+                                  left: isA ? 4 : 0,
+                                  right: isA ? 0 : 4),
+                              child: Text(senderLabel,
+                                  style: GoogleFonts.ubuntu(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.secondaryText)),
+                            ),
+                            const SizedBox(height: 3),
+                            // Bubble
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                  maxWidth: 280),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isA
+                                      ? theme.secondaryBackground
+                                      : theme.primary
+                                          .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft:
+                                        const Radius.circular(16),
+                                    topRight:
+                                        const Radius.circular(16),
+                                    bottomLeft: Radius.circular(
+                                        isA ? 4 : 16),
+                                    bottomRight: Radius.circular(
+                                        isA ? 16 : 4),
+                                  ),
+                                  border: Border.all(
+                                      color: theme.alternate
+                                          .withValues(alpha: 0.5)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    bubbleContent,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      ts != null
+                                          ? '${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}'
+                                          : '',
+                                      style: GoogleFonts.ubuntu(
+                                          fontSize: 10,
+                                          color: theme.secondaryText),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            // Read-only notice bar
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                  vertical: 12, horizontal: 20),
+              decoration: BoxDecoration(
+                color: theme.secondaryBackground,
+                border: Border(
+                    top: BorderSide(color: theme.alternate, width: 1)),
+              ),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.lock_outline_rounded,
+                        size: 14, color: theme.secondaryText),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Admin view — messaging is disabled',
+                      style: GoogleFonts.ubuntu(
+                          fontSize: 12, color: theme.secondaryText),
+                    ),
+                  ]),
+            ),
+          ]),
         ),
-      },
+      ),
     );
   }
 
@@ -1339,7 +1656,8 @@ class _OrdersTabState extends State<_OrdersTab> {
     ('all', 'All'),
     ('pending', 'Pending'),
     ('confirmed', 'Confirmed'),
-    ('in_progress', 'In Progress'),
+    ('partially_paid', 'Partially Paid'),
+    ('paid', 'Fully Paid'),
     ('completed', 'Completed'),
     ('cancelled', 'Cancelled'),
   ];
@@ -1492,11 +1810,6 @@ class _AdminOrderCard extends StatelessWidget {
             color: const Color(0xFF4CAF50),
             label: 'Paid',
             icon: Icons.payment_rounded
-          ),
-        'in_progress' => (
-            color: const Color(0xFF9C27B0),
-            label: 'In Progress',
-            icon: Icons.work_outline_rounded
           ),
         'completed' => (
             color: const Color(0xFF4CAF50),
@@ -1926,6 +2239,743 @@ class _AdminOrderCard extends StatelessWidget {
                 style: GoogleFonts.ubuntu(
                     fontSize: 12, color: theme.primaryText)),
           ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TAB – Users (Account Management)
+// ═══════════════════════════════════════════════════════════════════════════
+class _UsersTab extends StatefulWidget {
+  const _UsersTab();
+
+  @override
+  State<_UsersTab> createState() => _UsersTabState();
+}
+
+class _UsersTabState extends State<_UsersTab> {
+  String _filter = 'all';   // all | active | paused | deleted
+  String _role = 'all';     // all | client | service_provider
+  String _query = '';
+  final _searchCtrl = TextEditingController();
+
+  static const _statusFilters = [
+    ('all', 'All'),
+    ('active', 'Active'),
+    ('paused', 'Paused'),
+    ('deleted', 'Deleted'),
+  ];
+
+  static const _roleFilters = [
+    ('all', 'All Roles'),
+    ('client', 'Clients'),
+    ('service_provider', 'Contractors'),
+  ];
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Column(children: [
+      // ── Search + filters ──
+      Container(
+        color: theme.secondaryBackground,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(children: [
+          TextField(
+            controller: _searchCtrl,
+            onChanged: (v) => setState(() => _query = v.toLowerCase()),
+            decoration: InputDecoration(
+              hintText: 'Search by name or email…',
+              hintStyle:
+                  GoogleFonts.ubuntu(fontSize: 13, color: theme.secondaryText),
+              prefixIcon: Icon(Icons.search_rounded,
+                  size: 20, color: theme.secondaryText),
+              filled: true,
+              fillColor: theme.primaryBackground,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Status filter row
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _statusFilters.map((s) {
+                final sel = _filter == s.$1;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _filter = s.$1),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: sel
+                            ? _statusColor(s.$1)
+                            : theme.primaryBackground,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: sel
+                                ? _statusColor(s.$1)
+                                : theme.alternate,
+                            width: 1.2),
+                      ),
+                      child: Text(s.$2,
+                          style: GoogleFonts.ubuntu(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: sel
+                                  ? Colors.white
+                                  : theme.secondaryText)),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Role filter row
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _roleFilters.map((r) {
+                final sel = _role == r.$1;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _role = r.$1),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: sel
+                            ? theme.primary
+                            : theme.primaryBackground,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color:
+                                sel ? theme.primary : theme.alternate,
+                            width: 1.2),
+                      ),
+                      child: Text(r.$2,
+                          style: GoogleFonts.ubuntu(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  sel ? Colors.white : theme.secondaryText)),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ]),
+      ),
+      // ── User list ──
+      Expanded(
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .orderBy('created_time', descending: true)
+              .snapshots(),
+          builder: (ctx, snap) {
+            if (!snap.hasData) return _loadingOrError(ctx, snap);
+            var docs = snap.data!.docs;
+
+            // Role filter
+            if (_role != 'all') {
+              docs = docs
+                  .where((d) =>
+                      (d.data() as Map)['role'] == _role)
+                  .toList();
+            }
+            // Skip admin accounts from management list
+            docs = docs
+                .where((d) => (d.data() as Map)['role'] != 'admin')
+                .toList();
+
+            // Status filter
+            if (_filter != 'all') {
+              docs = docs
+                  .where((d) =>
+                      _accountStatus(d.data() as Map) == _filter)
+                  .toList();
+            }
+
+            // Search
+            if (_query.isNotEmpty) {
+              docs = docs.where((d) {
+                final data = d.data() as Map<String, dynamic>;
+                final name =
+                    (data['display_name'] as String? ?? '').toLowerCase();
+                final email =
+                    (data['email'] as String? ?? '').toLowerCase();
+                return name.contains(_query) || email.contains(_query);
+              }).toList();
+            }
+
+            if (docs.isEmpty) {
+              return _emptyState(ctx, 'No accounts found');
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: docs.length,
+              itemBuilder: (ctx, i) {
+                final data = docs[i].data() as Map<String, dynamic>;
+                return _UserAccountCard(
+                  docId: docs[i].id,
+                  data: data,
+                  onRefresh: () => setState(() {}),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    ]);
+  }
+
+  static Color _statusColor(String status) => switch (status) {
+        'active' => const Color(0xFF4CAF50),
+        'paused' => const Color(0xFFFF9800),
+        'deleted' => const Color(0xFFF44336),
+        _ => const Color(0xFF9E9E9E),
+      };
+
+  static String _accountStatus(Map data) {
+    if (data['deleted'] == true) return 'deleted';
+    if (data['paused'] == true) return 'paused';
+    return 'active';
+  }
+}
+
+class _UserAccountCard extends StatelessWidget {
+  const _UserAccountCard({
+    required this.docId,
+    required this.data,
+    required this.onRefresh,
+  });
+
+  final String docId;
+  final Map<String, dynamic> data;
+  final VoidCallback onRefresh;
+
+  static Color _statusColor(String s) => switch (s) {
+        'active' => const Color(0xFF4CAF50),
+        'paused' => const Color(0xFFFF9800),
+        'deleted' => const Color(0xFFF44336),
+        _ => const Color(0xFF9E9E9E),
+      };
+
+  static ({String label, Color color, IconData icon}) _statusCfg(String s) =>
+      switch (s) {
+        'paused' => (
+            label: 'Paused',
+            color: const Color(0xFFFF9800),
+            icon: Icons.pause_circle_rounded
+          ),
+        'deleted' => (
+            label: 'Deleted',
+            color: const Color(0xFFF44336),
+            icon: Icons.delete_forever_rounded
+          ),
+        _ => (
+            label: 'Active',
+            color: const Color(0xFF4CAF50),
+            icon: Icons.check_circle_rounded
+          ),
+      };
+
+  String _accountStatus() {
+    if (data['deleted'] == true) return 'deleted';
+    if (data['paused'] == true) return 'paused';
+    return 'active';
+  }
+
+  String _roleLabel(String role) => switch (role) {
+        'service_provider' => 'Contractor',
+        'client' => 'Client',
+        _ => role,
+      };
+
+  Future<void> _pauseResume(BuildContext ctx) async {
+    final theme = FlutterFlowTheme.of(ctx);
+    final isPaused = data['paused'] == true;
+    final name = data['display_name'] as String? ?? 'this account';
+    final action = isPaused ? 'Resume' : 'Pause';
+    final actionDesc = isPaused
+        ? 'This will restore their access to the app.'
+        : 'This will prevent them from logging in or using the app.';
+    final color = isPaused ? const Color(0xFF4CAF50) : const Color(0xFFFF9800);
+
+    final confirmed = await showDialog<bool>(
+      context: ctx,
+      builder: (dCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('$action Account?',
+            style: GoogleFonts.ubuntu(fontWeight: FontWeight.w700)),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(children: [
+              Icon(isPaused ? Icons.play_circle_rounded : Icons.pause_circle_rounded,
+                  color: color, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '$action "$name"?\n$actionDesc',
+                  style: GoogleFonts.ubuntu(fontSize: 13, color: theme.primaryText),
+                ),
+              ),
+            ]),
+          ),
+        ]),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dCtx, false),
+            child: Text('Cancel',
+                style: GoogleFonts.ubuntu(color: theme.secondaryText)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10))),
+            onPressed: () => Navigator.pop(dCtx, true),
+            child: Text(action,
+                style: GoogleFonts.ubuntu(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(docId)
+          .update({'paused': !isPaused});
+      await _logAdminAction(isPaused ? 'resume_account' : 'pause_account', {
+        'target_uid': docId,
+        'target_name': name,
+        'target_role': data['role'] ?? '',
+      });
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+          content: Text('Account ${isPaused ? 'resumed' : 'paused'}',
+              style: GoogleFonts.ubuntu(color: Colors.white)),
+          backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    } catch (e) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+          content: Text('Failed: $e',
+              style: GoogleFonts.ubuntu(color: Colors.white)),
+          backgroundColor: FlutterFlowTheme.of(ctx).error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    }
+  }
+
+  Future<void> _delete(BuildContext ctx) async {
+    final theme = FlutterFlowTheme.of(ctx);
+    final name = data['display_name'] as String? ?? 'this account';
+    final isAlreadyDeleted = data['deleted'] == true;
+
+    // Two-step confirmation for hard action
+    final step1 = await showDialog<bool>(
+      context: ctx,
+      builder: (dCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(children: [
+          Icon(Icons.warning_amber_rounded,
+              color: theme.error, size: 22),
+          const SizedBox(width: 8),
+          Text('Delete Account?',
+              style: GoogleFonts.ubuntu(fontWeight: FontWeight.w700)),
+        ]),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.error.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'You are about to delete "$name".\n\n'
+              'The account will be marked as deleted and the user '
+              'will lose all access to the app.\n\n'
+              'This action is logged and cannot be easily undone.',
+              style: GoogleFonts.ubuntu(
+                  fontSize: 13, color: theme.primaryText),
+            ),
+          ),
+        ]),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dCtx, false),
+            child: Text('Cancel',
+                style: GoogleFonts.ubuntu(color: theme.secondaryText)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: theme.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10))),
+            onPressed: () => Navigator.pop(dCtx, true),
+            child: Text('Proceed',
+                style: GoogleFonts.ubuntu(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (step1 != true || !ctx.mounted) return;
+
+    // Step 2 — type name to confirm
+    final nameCtrl = TextEditingController();
+    final step2 = await showDialog<bool>(
+      context: ctx,
+      builder: (dCtx) => StatefulBuilder(
+        builder: (sCtx, setSt) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Confirm Deletion',
+              style: GoogleFonts.ubuntu(fontWeight: FontWeight.w700)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(
+              'Type the account name to confirm:',
+              style: GoogleFonts.ubuntu(
+                  fontSize: 13, color: theme.secondaryText),
+            ),
+            const SizedBox(height: 10),
+            Text('"$name"',
+                style: GoogleFonts.ubuntu(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: theme.error)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: nameCtrl,
+              onChanged: (_) => setSt(() {}),
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Type name here…',
+                filled: true,
+                fillColor: theme.primaryBackground,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              ),
+              style: GoogleFonts.ubuntu(fontSize: 14),
+            ),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dCtx, false),
+              child: Text('Cancel',
+                  style: GoogleFonts.ubuntu(color: theme.secondaryText)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: nameCtrl.text.trim() == name
+                      ? theme.error
+                      : theme.alternate,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10))),
+              onPressed: nameCtrl.text.trim() == name
+                  ? () => Navigator.pop(dCtx, true)
+                  : null,
+              child: Text('Delete',
+                  style: GoogleFonts.ubuntu(fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      ),
+    );
+    nameCtrl.dispose();
+    if (step2 != true || !ctx.mounted) return;
+
+    try {
+      // Soft delete — keep data for logs, mark deleted + paused
+      await FirebaseFirestore.instance.collection('users').doc(docId).update({
+        'deleted': true,
+        'paused': true,
+        'deleted_at': FieldValue.serverTimestamp(),
+      });
+      await _logAdminAction('delete_account', {
+        'target_uid': docId,
+        'target_name': name,
+        'target_role': data['role'] ?? '',
+        'was_already_deleted': isAlreadyDeleted,
+      });
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+          content: Text('Account deleted',
+              style: GoogleFonts.ubuntu(color: Colors.white)),
+          backgroundColor: theme.error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    } catch (e) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+          content: Text('Failed: $e',
+              style: GoogleFonts.ubuntu(color: Colors.white)),
+          backgroundColor: FlutterFlowTheme.of(ctx).error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final status = _accountStatus();
+    final cfg = _statusCfg(status);
+    final name = data['display_name'] as String? ?? 'Unknown';
+    final email = data['email'] as String? ?? '';
+    final role = data['role'] as String? ?? 'client';
+    final photo = data['photo_url'] as String? ?? '';
+    final createdAt =
+        (data['created_time'] as Timestamp?)?.toDate();
+    final isPaused = data['paused'] == true;
+    final isDeleted = data['deleted'] == true;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.07),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: isDeleted
+          ? theme.error.withValues(alpha: 0.04)
+          : isPaused
+              ? const Color(0xFFFF9800).withValues(alpha: 0.04)
+              : theme.secondaryBackground,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // ── Header ──
+          Row(children: [
+            // Avatar
+            Stack(children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundImage:
+                    photo.isNotEmpty ? NetworkImage(photo) : null,
+                backgroundColor: theme.primary.withValues(alpha: 0.1),
+                child: photo.isEmpty
+                    ? Icon(Icons.person_rounded,
+                        size: 22, color: theme.primary)
+                    : null,
+              ),
+              // Status dot
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 13,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: _statusColor(status),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: theme.secondaryBackground, width: 2),
+                  ),
+                ),
+              ),
+            ]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      style: GoogleFonts.ubuntu(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  if (email.isNotEmpty)
+                    Text(email,
+                        style: GoogleFonts.ubuntu(
+                            fontSize: 12, color: theme.secondaryText),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+            // Status badge
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: cfg.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+                border:
+                    Border.all(color: cfg.color.withValues(alpha: 0.3)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(cfg.icon, size: 12, color: cfg.color),
+                const SizedBox(width: 4),
+                Text(cfg.label,
+                    style: GoogleFonts.ubuntu(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: cfg.color)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          // ── Info row ──
+          Row(children: [
+            // Role chip
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: role == 'service_provider'
+                    ? theme.primary.withValues(alpha: 0.1)
+                    : theme.secondary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(
+                    role == 'service_provider'
+                        ? Icons.build_circle_outlined
+                        : Icons.person_outline_rounded,
+                    size: 12,
+                    color: role == 'service_provider'
+                        ? theme.primary
+                        : theme.secondary),
+                const SizedBox(width: 4),
+                Text(_roleLabel(role),
+                    style: GoogleFonts.ubuntu(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: role == 'service_provider'
+                            ? theme.primary
+                            : theme.secondary)),
+              ]),
+            ),
+            const SizedBox(width: 10),
+            if (createdAt != null) ...[
+              Icon(Icons.calendar_today_rounded,
+                  size: 12, color: theme.secondaryText),
+              const SizedBox(width: 4),
+              Text(
+                'Joined ${createdAt.day}/${createdAt.month}/${createdAt.year}',
+                style: GoogleFonts.ubuntu(
+                    fontSize: 11, color: theme.secondaryText),
+              ),
+            ],
+          ]),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+          // ── Action buttons ──
+          Row(children: [
+            if (!isDeleted) ...[
+              // Pause / Resume button
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _pauseResume(context),
+                  icon: Icon(
+                    isPaused
+                        ? Icons.play_circle_outline_rounded
+                        : Icons.pause_circle_outline_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    isPaused ? 'Resume' : 'Pause',
+                    style: GoogleFonts.ubuntu(
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isPaused
+                        ? const Color(0xFF4CAF50)
+                        : const Color(0xFFFF9800),
+                    side: BorderSide(
+                      color: isPaused
+                          ? const Color(0xFF4CAF50).withValues(alpha: 0.5)
+                          : const Color(0xFFFF9800).withValues(alpha: 0.5),
+                    ),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
+            // Delete button
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: isDeleted ? null : () => _delete(context),
+                icon: Icon(
+                  isDeleted
+                      ? Icons.delete_forever_rounded
+                      : Icons.delete_outline_rounded,
+                  size: 16,
+                ),
+                label: Text(
+                  isDeleted ? 'Deleted' : 'Delete',
+                  style: GoogleFonts.ubuntu(
+                      fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDeleted
+                      ? theme.secondaryText
+                      : theme.error,
+                  side: BorderSide(
+                    color: isDeleted
+                        ? theme.alternate
+                        : theme.error.withValues(alpha: 0.5),
+                  ),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ),
+          ]),
         ]),
       ),
     );
