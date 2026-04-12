@@ -82,7 +82,7 @@ class _NoConnectionScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Please check your connection\nand try again.',
+                'Please check your connection\nand try again',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.ubuntu(
                   fontSize: 14,

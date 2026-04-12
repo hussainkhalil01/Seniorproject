@@ -151,6 +151,7 @@ class _EditpasswordWidgetState extends State<EditpasswordWidget> {
 
       if (emailChanged) {
         await user.verifyBeforeUpdateEmail(newEmail);
+        await currentUserReference!.update({'email': newEmail});
       }
       if (passwordChange) {
         await user.updatePassword(newPwd);

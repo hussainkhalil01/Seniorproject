@@ -22,8 +22,8 @@ class EditpasswordModel extends FlutterFlowModel<EditpasswordWidget> {
   String? initialEmail;
 
   bool get hasChanges =>
-      emailController?.text.trim() != initialEmail ||
-      currentPasswordController?.text.trim().isNotEmpty == true ||
+      emailController?.text.trim().toLowerCase().replaceAll(' ', '') !=
+          initialEmail ||
       newPasswordController?.text.trim().isNotEmpty == true;
 
   @override

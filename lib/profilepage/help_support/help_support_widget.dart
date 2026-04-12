@@ -219,25 +219,27 @@ class _HelpSupportWidgetState extends State<HelpSupportWidget> {
                               ),
                             ),
                           ),
-                          AnimatedCrossFade(
-                            duration: const Duration(milliseconds: 220),
-                            crossFadeState: isExpanded
-                                ? CrossFadeState.showSecond
-                                : CrossFadeState.showFirst,
-                            firstChild: const SizedBox.shrink(),
-                            secondChild: Container(
-                              margin: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: theme.primaryBackground,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                faq.answer,
-                                style: GoogleFonts.ubuntu(
-                                  fontSize: 13,
-                                  color: theme.secondaryText,
-                                  height: 1.6,
+                          ClipRect(
+                            child: AnimatedCrossFade(
+                              duration: const Duration(milliseconds: 220),
+                              crossFadeState: isExpanded
+                                  ? CrossFadeState.showSecond
+                                  : CrossFadeState.showFirst,
+                              firstChild: const SizedBox.shrink(),
+                              secondChild: Container(
+                                margin: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: theme.primaryBackground,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  faq.answer,
+                                  style: GoogleFonts.ubuntu(
+                                    fontSize: 13,
+                                    color: theme.secondaryText,
+                                    height: 1.6,
+                                  ),
                                 ),
                               ),
                             ),

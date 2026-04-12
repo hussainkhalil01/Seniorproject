@@ -9,7 +9,9 @@ class DeleteAccountConfirmDialogWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
+    return Material(
+      type: MaterialType.transparency,
+      child: Align(
       alignment: const AlignmentDirectional(0.0, 0.0),
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(16.0, 12.0, 16.0, 12.0),
@@ -186,6 +188,7 @@ class DeleteAccountConfirmDialogWidget extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
