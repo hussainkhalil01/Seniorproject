@@ -82,6 +82,11 @@ class ChatsRecord extends FirestoreRecord {
   String get chatKey => _chatKey ?? '';
   bool hasChatKey() => _chatKey != null;
 
+  // "deleted_by" field.
+  List<String>? _deletedBy;
+  List<String> get deletedBy => _deletedBy ?? const [];
+  bool hasDeletedBy() => _deletedBy != null;
+
   void _initializeFields() {
     _userA = snapshotData['user_a'] as DocumentReference?;
     _userB = snapshotData['user_b'] as DocumentReference?;
@@ -97,6 +102,7 @@ class ChatsRecord extends FirestoreRecord {
     _userAPhoto = snapshotData['user_a_photo'] as String?;
     _userBPhoto = snapshotData['user_b_photo'] as String?;
     _chatKey = snapshotData['chat_key'] as String?;
+    _deletedBy = getDataList(snapshotData['deleted_by']);
   }
 
   static CollectionReference get collection =>

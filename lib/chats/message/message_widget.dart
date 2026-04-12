@@ -188,6 +188,7 @@ class _MessageWidgetState extends State<MessageWidget> {
       lastMessage: _model.messageTemp,
     );
     chatUpdateData['last_message_seen_by'] = [currentUserReference];
+    chatUpdateData['deleted_by'] = [];
     await widget.chatRef!.update(chatUpdateData);
   }
 

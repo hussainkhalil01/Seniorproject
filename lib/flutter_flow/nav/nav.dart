@@ -239,7 +239,9 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: AiChatPageWidget.routeName,
           path: AiChatPageWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => const AiChatPageWidget(),
+          builder: (context, params) => AiChatPageWidget(
+            initialQuery: params.getParam('initialQuery', ParamType.String),
+          ),
         ),
         FFRoute(
           name: AdminDashboardPage.routeName,
