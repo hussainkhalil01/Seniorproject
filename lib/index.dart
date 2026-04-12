@@ -24,3 +24,9 @@ export '/profilepage/editpassword/editpassword_widget.dart'
 export '/chats/message/message_widget.dart' show MessageWidget;
 export '/authentication_pages/email_verify_page/email_verify_page_widget.dart'
     show EmailVerifyPageWidget;
+export '/pages/contractor_profile_page/contractor_profile_page_widget.dart'
+    show ContractorProfilePageWidget;
+export '/pages/write_review_page/write_review_page_widget.dart'
+    show WriteReviewPageWidget;
+export '/pages/contractors_map_page/contractors_map_page_widget.dart'
+    show ContractorsMapPageWidget;

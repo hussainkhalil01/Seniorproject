@@ -1,6 +1,9 @@
-﻿import '/auth/firebase_auth/auth_util.dart';
+﻿import 'dart:math' as math;
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
-import '/components/connectivity_wrapper.dart';
 import '/components/startchatting_widget.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -14,6 +17,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_page_model.dart';
 export 'home_page_model.dart';
+
+enum _HomeSort { none, nearest, highestRated }
 
 class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
@@ -30,8 +35,51 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
   bool _notificationsEnabled = true;
+  Position? _userPosition;
+  _HomeSort _sort = _HomeSort.none;
 
   static const _kNotifKey = 'push_notifications';
+
+  Future<void> _loadUserLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.deniedForever ||
+          perm == LocationPermission.denied) return;
+      final pos = await Geolocator.getCurrentPosition(
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.low));
+      if (mounted) setState(() => _userPosition = pos);
+    } catch (_) {}
+  }
+
+  double _distKm(double lat1, double lng1, double lat2, double lng2) {
+    const r = 6371.0;
+    final dLat = (lat2 - lat1) * math.pi / 180;
+    final dLng = (lng2 - lng1) * math.pi / 180;
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180) *
+            math.cos(lat2 * math.pi / 180) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return r * c;
+  }
+
+  String _formatDist(UsersRecord c) {
+    if (_userPosition == null || (c.latitude == 0.0 && c.longitude == 0.0)) {
+      return '';
+    }
+    final km = _distKm(_userPosition!.latitude, _userPosition!.longitude,
+        c.latitude, c.longitude);
+    return km < 1
+        ? '${(km * 1000).toStringAsFixed(0)} m away'
+        : '${km.toStringAsFixed(1)} km away';
+  }
 
   Future<void> _loadNotifPref() async {
     final prefs = await SharedPreferences.getInstance();
@@ -80,6 +128,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     _model.textController ??= TextEditingController();
     _model.textFieldFocusNode ??= FocusNode();
     _loadNotifPref();
+    _loadUserLocation();
   }
 
   @override
@@ -100,8 +149,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         child: Scaffold(
           key: scaffoldKey,
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          body: ConnectivityWrapper(
-            child: SafeArea(
+          body: SafeArea(
             top: true,
             child: SingleChildScrollView(
               controller: _model.columnController,
@@ -403,18 +451,85 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                     ),
                   ),
 
-                  // ── CONTRACTORS ───────────────────────────────────
+                  // ── CONTRACTORS HEADER ───────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                    child: Text(
-                      'Top Verified Contractors',
-                      style: GoogleFonts.ubuntu(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: FlutterFlowTheme.of(context).primaryText,
-                      ),
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Top Verified Contractors',
+                          style: GoogleFonts.ubuntu(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => context.pushNamed(
+                            ContractorsMapPageWidget.routeName,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: FlutterFlowTheme.of(context)
+                                  .primary
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.map_rounded,
+                                    size: 15,
+                                    color:
+                                        FlutterFlowTheme.of(context).primary),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Map View',
+                                  style: GoogleFonts.ubuntu(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        FlutterFlowTheme.of(context).primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+
+                  // ── SORT CHIPS ────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+                    child: Row(
+                      children: [
+                        _SortChip(
+                          label: 'Nearest',
+                          icon: Icons.location_on_rounded,
+                          selected: _sort == _HomeSort.nearest,
+                          onTap: () => setState(() => _sort =
+                              _sort == _HomeSort.nearest
+                                  ? _HomeSort.none
+                                  : _HomeSort.nearest),
+                        ),
+                        const SizedBox(width: 8),
+                        _SortChip(
+                          label: 'Highest Rated',
+                          icon: Icons.star_rounded,
+                          selected: _sort == _HomeSort.highestRated,
+                          onTap: () => setState(() => _sort =
+                              _sort == _HomeSort.highestRated
+                                  ? _HomeSort.none
+                                  : _HomeSort.highestRated),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   StreamBuilder<List<UsersRecord>>(
                     stream: queryUsersRecord(
                       queryBuilder: (q) {
@@ -439,6 +554,26 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                         );
                       }
                       final contractors = snapshot.data!;
+                      // Apply sort
+                      final sorted = List<UsersRecord>.from(contractors);
+                      if (_sort == _HomeSort.nearest && _userPosition != null) {
+                        sorted.sort((a, b) {
+                          final da = _distKm(
+                              _userPosition!.latitude,
+                              _userPosition!.longitude,
+                              a.latitude,
+                              a.longitude);
+                          final db = _distKm(
+                              _userPosition!.latitude,
+                              _userPosition!.longitude,
+                              b.latitude,
+                              b.longitude);
+                          return da.compareTo(db);
+                        });
+                      } else if (_sort == _HomeSort.highestRated) {
+                        sorted.sort(
+                            (a, b) => b.ratingAvg.compareTo(a.ratingAvg));
+                      }
                       if (contractors.isEmpty) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 40),
@@ -472,13 +607,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       return Padding(
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                         child: Column(
-                          children: contractors.map((contractor) {
+                          children: sorted.map((contractor) {
                             final isMe =
                                 contractor.reference == currentUserReference;
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
-                              child:
-                                  _buildContractorCard(context, contractor, isMe),
+                              child: _buildContractorCard(
+                                  context, contractor, isMe),
                             );
                           }).toList(),
                         ),
@@ -489,7 +624,6 @@ class _HomePageWidgetState extends State<HomePageWidget> {
               ),
             ),
           ),
-          ),
         ),
       ),
     );
@@ -499,7 +633,17 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       BuildContext context, UsersRecord contractor, bool isMe) {
     final isCurrentUserProvider =
         currentUserDocument?.role == 'service_provider';
-    return Container(
+    return GestureDetector(
+      onTap: () => context.pushNamed(
+        ContractorProfilePageWidget.routeName,
+        queryParameters: {
+          'contractorRef': serializeParam(
+            contractor.reference,
+            ParamType.DocumentReference,
+          ),
+        },
+      ),
+      child: Container(
         decoration: BoxDecoration(
           color: FlutterFlowTheme.of(context).secondaryBackground,
           borderRadius: BorderRadius.circular(16),
@@ -599,20 +743,40 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        color: Color(0xFFFFC107),
-                        size: 15,
-                      ),
+                      const Icon(Icons.star_rounded,
+                          color: Color(0xFFFFC107), size: 15),
                       const SizedBox(width: 3),
-                      Text(
-                        '5.0',
-                        style: GoogleFonts.ubuntu(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: FlutterFlowTheme.of(context).primaryText,
+                      Flexible(
+                        child: Text(
+                          contractor.ratingAvg > 0
+                              ? '${contractor.ratingAvg.toStringAsFixed(1)} (${contractor.ratingCount})'
+                              : 'No reviews',
+                          style: GoogleFonts.ubuntu(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (_formatDist(contractor).isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Icon(Icons.location_on_rounded,
+                            size: 13,
+                            color: FlutterFlowTheme.of(context).primary),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(
+                            _formatDist(contractor),
+                            style: GoogleFonts.ubuntu(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: FlutterFlowTheme.of(context).primary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -663,9 +827,64 @@ class _HomePageWidgetState extends State<HomePageWidget> {
               ),
           ],
         ),
+      ),
     );
   }
 }
+
+// ─── Sort Chip ─────────────────────────────────────────────────────────────
+
+class _SortChip extends StatelessWidget {
+  const _SortChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? theme.primary : theme.secondaryBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: selected ? theme.primary : theme.alternate),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon,
+                size: 14,
+                color: selected ? Colors.white : theme.secondaryText),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: GoogleFonts.ubuntu(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : theme.secondaryText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Category Chip ─────────────────────────────────────────────────────────
 
 class _HomeCategory extends StatelessWidget {
   const _HomeCategory({

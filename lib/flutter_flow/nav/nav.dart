@@ -195,6 +195,46 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           requireAuth: true,
           builder: (context, params) => const EmailVerifyPageWidget(),
         ),
+        FFRoute(
+          name: ContractorProfilePageWidget.routeName,
+          path: ContractorProfilePageWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => ContractorProfilePageWidget(
+            contractorRef: params.getParam(
+              'contractorRef',
+              ParamType.DocumentReference,
+              isList: false,
+              collectionNamePath: ['users'],
+            )!,
+          ),
+        ),
+        FFRoute(
+          name: WriteReviewPageWidget.routeName,
+          path: WriteReviewPageWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => WriteReviewPageWidget(
+            contractorRef: params.getParam(
+              'contractorRef',
+              ParamType.DocumentReference,
+              isList: false,
+              collectionNamePath: ['users'],
+            )!,
+            contractorName: params.getParam('contractorName', ParamType.String) ?? '',
+          ),
+        ),
+        FFRoute(
+          name: ContractorsMapPageWidget.routeName,
+          path: ContractorsMapPageWidget.routePath,
+          requireAuth: true,
+          builder: (context, params) => ContractorsMapPageWidget(
+            highlightRef: params.getParam(
+              'highlightRef',
+              ParamType.DocumentReference,
+              isList: false,
+              collectionNamePath: ['users'],
+            ),
+          ),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

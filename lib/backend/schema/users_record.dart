@@ -91,6 +91,26 @@ class UsersRecord extends FirestoreRecord {
   String get preferredLanguage => _preferredLanguage ?? '';
   bool hasPreferredLanguage() => _preferredLanguage != null;
 
+  // "latitude" field.
+  double? _latitude;
+  double get latitude => _latitude ?? 0.0;
+  bool hasLatitude() => _latitude != null;
+
+  // "longitude" field.
+  double? _longitude;
+  double get longitude => _longitude ?? 0.0;
+  bool hasLongitude() => _longitude != null;
+
+  // "rating_avg" field.
+  double? _ratingAvg;
+  double get ratingAvg => _ratingAvg ?? 0.0;
+  bool hasRatingAvg() => _ratingAvg != null;
+
+  // "rating_count" field.
+  int? _ratingCount;
+  int get ratingCount => _ratingCount ?? 0;
+  bool hasRatingCount() => _ratingCount != null;
+
   void _initializeFields() {
     _uid = snapshotData['uid'] as String?;
     _fullName = snapshotData['full_name'] as String?;
@@ -107,6 +127,10 @@ class UsersRecord extends FirestoreRecord {
     _isOnline = snapshotData['is_online'] as bool?;
     _isDisabled = snapshotData['is_disabled'] as bool?;
     _preferredLanguage = snapshotData['preferred_language'] as String?;
+    _latitude = castToType<double>(snapshotData['latitude']);
+    _longitude = castToType<double>(snapshotData['longitude']);
+    _ratingAvg = castToType<double>(snapshotData['rating_avg']);
+    _ratingCount = castToType<int>(snapshotData['rating_count']);
   }
 
   static CollectionReference get collection =>

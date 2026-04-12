@@ -3234,10 +3234,10 @@ class _SendOrderSheetState extends State<_SendOrderSheet> {
   final _amountCtrl = TextEditingController();
   final _daysCtrl = TextEditingController(text: '3');
   final _notesCtrl = TextEditingController();
-  String _currency = 'BHD';
+  // Currency is fixed to BHD
   bool _isSending = false;
 
-  static const _currencies = ['BHD', 'SAR', 'AED', 'USD', 'EUR', 'GBP'];
+  static const _currency = 'BHD';
 
   @override
   void dispose() {
@@ -3344,67 +3344,26 @@ class _SendOrderSheetState extends State<_SendOrderSheet> {
                   style: GoogleFonts.ubuntu(fontSize: 14),
                 ),
                 const SizedBox(height: 14),
-                // Amount + currency
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label(context, 'Amount *'),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: _amountCtrl,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                                    decimal: true),
-                            decoration:
-                                _inputDecoration(context, '0.00'),
-                            style: GoogleFonts.ubuntu(fontSize: 14),
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              if (double.tryParse(v.trim()) == null) {
-                                return 'Invalid';
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label(context, 'Currency'),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            value: _currency,
-                            items: _currencies
-                                .map((c) => DropdownMenuItem(
-                                    value: c,
-                                    child: Text(c,
-                                        style:
-                                            GoogleFonts.ubuntu(fontSize: 14))))
-                                .toList(),
-                            onChanged: (v) =>
-                                setState(() => _currency = v ?? 'BHD'),
-                            decoration: _inputDecoration(context, ''),
-                            style: GoogleFonts.ubuntu(
-                                fontSize: 14,
-                                color: theme.primaryText),
-                            dropdownColor: theme.secondaryBackground,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                // Amount (BHD)
+                _label(context, 'Amount (BHD) *'),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _amountCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(
+                          decimal: true),
+                  decoration:
+                      _inputDecoration(context, '0.00'),
+                  style: GoogleFonts.ubuntu(fontSize: 14),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Required';
+                    }
+                    if (double.tryParse(v.trim()) == null) {
+                      return 'Invalid';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 14),
                 // Delivery days

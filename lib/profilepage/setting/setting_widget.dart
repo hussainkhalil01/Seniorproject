@@ -1,7 +1,9 @@
 ﻿import '/auth/firebase_auth/auth_util.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'setting_model.dart';
@@ -23,6 +25,9 @@ class _SettingWidgetState extends State<SettingWidget> {
   bool _languageInitialized = false;
   String? _initialLanguage;
   String? _selectedLanguage;
+  bool _updatingLocation = false;
+  double? _savedLat;
+  double? _savedLng;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -39,12 +44,118 @@ class _SettingWidgetState extends State<SettingWidget> {
         _model.switchValue1 = prefs.getBool('push_notifications') ?? true;
       });
     });
+
+    // Load saved location
+    if (currentUserReference != null) {
+      currentUserReference!.get().then((snap) {
+        if (!mounted) return;
+        final data = snap.data() as Map<String, dynamic>?;
+        if (data != null) {
+          safeSetState(() {
+            _savedLat = (data['latitude'] as num?)?.toDouble();
+            _savedLng = (data['longitude'] as num?)?.toDouble();
+          });
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _model.dispose();
     super.dispose();
+  }
+
+  Future<void> _updateLocation() async {
+    if (_updatingLocation) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final theme = FlutterFlowTheme.of(context);
+    safeSetState(() => _updatingLocation = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        messenger
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(
+            content: Text('Please enable location services',
+                style: GoogleFonts.ubuntu(color: Colors.white, fontSize: 14)),
+            backgroundColor: theme.error,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ));
+        return;
+      }
+
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.deniedForever ||
+          perm == LocationPermission.denied) {
+        messenger
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(
+            content: Text('Location permission denied',
+                style: GoogleFonts.ubuntu(color: Colors.white, fontSize: 14)),
+            backgroundColor: theme.error,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ));
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.high));
+
+      if (currentUserReference != null) {
+        await currentUserReference!.update(<String, dynamic>{
+          'latitude': pos.latitude,
+          'longitude': pos.longitude,
+        });
+      }
+
+      if (mounted) {
+        safeSetState(() {
+          _savedLat = pos.latitude;
+          _savedLng = pos.longitude;
+        });
+      }
+
+      messenger
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(
+          content: Text(
+            'Location updated on map!',
+            style: GoogleFonts.ubuntu(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+          ),
+          backgroundColor: theme.success,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+    } catch (e) {
+      messenger
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(
+          content: Text('Failed to get location',
+              style: GoogleFonts.ubuntu(color: Colors.white, fontSize: 14)),
+          backgroundColor: theme.error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+    } finally {
+      if (mounted) safeSetState(() => _updatingLocation = false);
+    }
   }
 
   bool get _hasChanges {
@@ -332,6 +443,80 @@ class _SettingWidgetState extends State<SettingWidget> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 20),
+                      _sectionCard(
+                        context: context,
+                        title: 'Location & Map',
+                        icon: Icons.location_on_rounded,
+                        children: [
+                          Text(
+                            'Set your current location so clients can find you on the map',
+                            style: GoogleFonts.ubuntu(
+                              fontSize: 12,
+                              color: theme.secondaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          if (_savedLat != null &&
+                              _savedLng != null &&
+                              (_savedLat != 0.0 || _savedLng != 0.0))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle_rounded,
+                                      color: theme.success, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Location set: ${_savedLat!.toStringAsFixed(4)}, ${_savedLng!.toStringAsFixed(4)}',
+                                    style: GoogleFonts.ubuntu(
+                                        fontSize: 12,
+                                        color: theme.secondaryText),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed:
+                                  _updatingLocation ? null : _updateLocation,
+                              icon: _updatingLocation
+                                  ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white),
+                                    )
+                                  : const Icon(Icons.my_location_rounded,
+                                      size: 18),
+                              label: Text(
+                                _updatingLocation
+                                    ? 'Getting location...'
+                                    : (_savedLat != null &&
+                                            _savedLng != null &&
+                                            (_savedLat != 0.0 ||
+                                                _savedLng != 0.0)
+                                        ? 'Update My Location'
+                                        : 'Set My Location on Map'),
+                                style: GoogleFonts.ubuntu(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
                       AuthUserStreamWidget(
