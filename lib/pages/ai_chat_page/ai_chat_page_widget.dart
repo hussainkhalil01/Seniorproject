@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '/auth/firebase_auth/auth_util.dart';
+import '/backend/api_requests/openai_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -55,210 +57,17 @@ class _ContractorSuggestion {
     this.distKm,
     this.topReview,
   });
-}
 
-// ─────────────────────────────────────────────────────────
-//  User intent
-// ─────────────────────────────────────────────────────────
-
-enum _Intent { findByProblem, nearest, highestRated, cheapest, general, greeting, thanks, help }
-
-class _ParsedQuery {
-  final _Intent intent;
-  final String? category;
-  final String? problemDescription;
-  final bool wantsNearest;
-  final bool wantsTopRated;
-
-  _ParsedQuery({
-    required this.intent,
-    this.category,
-    this.problemDescription,
-    this.wantsNearest = false,
-    this.wantsTopRated = false,
-  });
-}
-
-// ─────────────────────────────────────────────────────────
-//  Category keyword mapping (expanded)
-// ─────────────────────────────────────────────────────────
-
-const _kCategories = [
-  'HVAC (Air Conditioning)',
-  'Electrical Services',
-  'Plumbing',
-  'General Construction & Renovation',
-  'Interior Finishing',
-];
-
-const _kKeywords = <String, List<String>>{
-  'HVAC (Air Conditioning)': [
-    'ac', 'a/c', 'air conditioning', 'air conditioner', 'hvac',
-    'cooling', 'air con', 'heat', 'heating', 'thermostat',
-    'duct', 'ventilation', 'fan coil', 'split unit',
-    'not cooling', 'not cold', 'warm air', 'hot air',
-    'compressor', 'refrigerant', 'freon', 'filter',
-    'central air', 'mini split', 'window unit',
-    'freezing', 'ice', 'defrost',
-    'مكيف', 'تكييف', 'تبريد',
-  ],
-  'Electrical Services': [
-    'electric', 'electrician', 'wiring', 'outlet', 'socket',
-    'breaker', 'fuse', 'power', 'light', 'lighting',
-    'voltage', 'circuit', 'panel', 'switch',
-    'power outage', 'no power', 'short circuit', 'sparking',
-    'tripping', 'flickering', 'dimming', 'buzzing',
-    'generator', 'inverter', 'transformer', 'meter',
-    'chandelier', 'ceiling fan', 'recessed light',
-    'كهرباء', 'كهربائي',
-  ],
-  'Plumbing': [
-    'plumb', 'plumber', 'pipe', 'leak', 'leaking', 'water',
-    'drain', 'toilet', 'sink', 'faucet', 'shower', 'tap',
-    'sewage', 'heater tank', 'water heater', 'clog', 'blockage',
-    'dripping', 'overflow', 'flooding', 'backed up',
-    'water pressure', 'low pressure', 'burst pipe',
-    'garbage disposal', 'sump pump', 'water softener',
-    'bathroom', 'bathtub', 'bidet',
-    'سباكة', 'سباك', 'تسريب', 'ماء',
-  ],
-  'General Construction & Renovation': [
-    'construction', 'renovation', 'build', 'remodel', 'rebuild',
-    'contractor', 'cement', 'concrete', 'flooring', 'tile', 'tiling',
-    'roofing', 'roof', 'wall', 'brick', 'foundation', 'structural',
-    'carpentry', 'carpenter', 'wood', 'door', 'window', 'gate',
-    'demolition', 'extension', 'addition', 'basement',
-    'drywall', 'insulation', 'waterproof', 'crack', 'cracked',
-    'pergola', 'deck', 'patio', 'fence', 'garden wall',
-    'بناء', 'ترميم', 'مقاول',
-  ],
-  'Interior Finishing': [
-    'interior', 'finishing', 'paint', 'painting', 'painter',
-    'wallpaper', 'ceiling', 'gypsum', 'partition',
-    'decor', 'decoration', 'decorator', 'design',
-    'furniture', 'cabinet', 'wardrobe', 'kitchen', 'cupboard',
-    'marble', 'granite', 'countertop', 'backsplash',
-    'molding', 'trim', 'baseboard', 'crown molding',
-    'parquet', 'laminate', 'vinyl', 'carpet',
-    'دهان', 'ديكور', 'تشطيب',
-  ],
-};
-
-// Problem ➜ category + explanation
-const _kProblemMap = <String, Map<String, String>>{
-  // HVAC problems
-  'ac not cooling': {'cat': 'HVAC (Air Conditioning)', 'desc': 'AC cooling issue'},
-  'ac not working': {'cat': 'HVAC (Air Conditioning)', 'desc': 'AC malfunction'},
-  'air conditioner leaking': {'cat': 'HVAC (Air Conditioning)', 'desc': 'AC water leak'},
-  'ac making noise': {'cat': 'HVAC (Air Conditioning)', 'desc': 'AC noise issue'},
-  'ac smell': {'cat': 'HVAC (Air Conditioning)', 'desc': 'AC odor problem'},
-  'ac dripping': {'cat': 'HVAC (Air Conditioning)', 'desc': 'AC condensation issue'},
-  // Electrical problems
-  'power outage': {'cat': 'Electrical Services', 'desc': 'power outage'},
-  'no electricity': {'cat': 'Electrical Services', 'desc': 'electrical failure'},
-  'lights flickering': {'cat': 'Electrical Services', 'desc': 'flickering lights'},
-  'sparking outlet': {'cat': 'Electrical Services', 'desc': 'dangerous sparking'},
-  'breaker tripping': {'cat': 'Electrical Services', 'desc': 'circuit breaker issue'},
-  'short circuit': {'cat': 'Electrical Services', 'desc': 'short circuit'},
-  // Plumbing problems
-  'water leak': {'cat': 'Plumbing', 'desc': 'water leak'},
-  'pipe burst': {'cat': 'Plumbing', 'desc': 'burst pipe emergency'},
-  'toilet clogged': {'cat': 'Plumbing', 'desc': 'toilet blockage'},
-  'drain blocked': {'cat': 'Plumbing', 'desc': 'drainage blockage'},
-  'low water pressure': {'cat': 'Plumbing', 'desc': 'water pressure issue'},
-  'no hot water': {'cat': 'Plumbing', 'desc': 'water heater problem'},
-  'faucet dripping': {'cat': 'Plumbing', 'desc': 'dripping faucet'},
-  // Construction problems
-  'wall crack': {'cat': 'General Construction & Renovation', 'desc': 'wall cracking'},
-  'roof leak': {'cat': 'General Construction & Renovation', 'desc': 'roof leak'},
-  'foundation crack': {'cat': 'General Construction & Renovation', 'desc': 'foundation issue'},
-  'door broken': {'cat': 'General Construction & Renovation', 'desc': 'door repair'},
-  'window broken': {'cat': 'General Construction & Renovation', 'desc': 'window repair'},
-  // Interior problems
-  'paint peeling': {'cat': 'Interior Finishing', 'desc': 'paint damage'},
-  'ceiling damage': {'cat': 'Interior Finishing', 'desc': 'ceiling repair'},
-  'tile broken': {'cat': 'Interior Finishing', 'desc': 'tile replacement'},
-};
-
-// ─────────────────────────────────────────────────────────
-//  Query parser
-// ─────────────────────────────────────────────────────────
-
-_ParsedQuery _parseQuery(String input) {
-  final lower = input.toLowerCase().trim();
-
-  // Greetings
-  final greetings = ['hi', 'hello', 'hey', 'good morning', 'good evening',
-    'good afternoon', 'assalam', 'salam', 'marhaba', 'السلام', 'مرحبا'];
-  if (greetings.any((g) => lower == g || lower.startsWith('$g '))) {
-    return _ParsedQuery(intent: _Intent.greeting);
-  }
-
-  // Thanks
-  final thanks = ['thank', 'thanks', 'thx', 'appreciate', 'شكر'];
-  if (thanks.any((t) => lower.contains(t))) {
-    return _ParsedQuery(intent: _Intent.thanks);
-  }
-
-  // Help
-  if (lower == 'help' || lower == 'what can you do' ||
-      lower.contains('how do you work') || lower.contains('what do you do')) {
-    return _ParsedQuery(intent: _Intent.help);
-  }
-
-  // Detect modifiers
-  final wantsNearest = lower.contains('nearest') || lower.contains('near me') ||
-      lower.contains('close') || lower.contains('nearby') ||
-      lower.contains('closest') || lower.contains('قريب');
-  final wantsTopRated = lower.contains('highest rated') ||
-      lower.contains('best rated') || lower.contains('top rated') ||
-      lower.contains('best') || lower.contains('أفضل');
-
-  // Problem-based detection (most specific)
-  for (final entry in _kProblemMap.entries) {
-    if (lower.contains(entry.key)) {
-      return _ParsedQuery(
-        intent: _Intent.findByProblem,
-        category: entry.value['cat'],
-        problemDescription: entry.value['desc'],
-        wantsNearest: wantsNearest,
-        wantsTopRated: wantsTopRated,
-      );
-    }
-  }
-
-  // Category keyword detection (score-based)
-  String? bestCategory;
-  int bestScore = 0;
-  for (final entry in _kKeywords.entries) {
-    int score = 0;
-    for (final kw in entry.value) {
-      if (lower.contains(kw)) score++;
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestCategory = entry.key;
-    }
-  }
-
-  if (bestCategory != null) {
-    return _ParsedQuery(
-      intent: _Intent.findByProblem,
-      category: bestCategory,
-      wantsNearest: wantsNearest,
-      wantsTopRated: wantsTopRated,
-    );
-  }
-
-  // Intent-only queries
-  if (wantsTopRated) {
-    return _ParsedQuery(intent: _Intent.highestRated, wantsTopRated: true);
-  }
-  if (wantsNearest) {
-    return _ParsedQuery(intent: _Intent.nearest, wantsNearest: true);
-  }
-
-  return _ParsedQuery(intent: _Intent.general);
+  /// Serialize to JSON for sending to OpenAI (safe fields only).
+  Map<String, dynamic> toSafeJson() => {
+        'name': name,
+        'category': serviceType,
+        'rating': rating,
+        'review_count': reviewCount,
+        if (distKm != null)
+          'distance_km': double.parse(distKm!.toStringAsFixed(1)),
+        if (topReview != null) 'top_review': topReview,
+      };
 }
 
 // ─────────────────────────────────────────────────────────
@@ -280,21 +89,6 @@ double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
 String _distLabel(double km) {
   if (km < 1) return '${(km * 1000).toStringAsFixed(0)} m away';
   return '${km.toStringAsFixed(1)} km away';
-}
-
-String _shortCat(String cat) {
-  switch (cat) {
-    case 'HVAC (Air Conditioning)':
-      return 'HVAC';
-    case 'Electrical Services':
-      return 'Electrical';
-    case 'General Construction & Renovation':
-      return 'Construction';
-    case 'Interior Finishing':
-      return 'Interior';
-    default:
-      return cat;
-  }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -319,7 +113,9 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
   final List<_Msg> _messages = [];
   bool _thinking = false;
   Position? _userPosition;
-  String? _lastCategory; // Conversation context
+
+  /// OpenAI service with conversation memory.
+  final _ai = OpenAIService();
 
   static const _quickReplies = [
     'AC not cooling',
@@ -336,7 +132,7 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
     _messages.add(_Msg(
       sender: _Sender.bot,
       text:
-          'Hi! 👋 I\'m your contractor assistant.\n\nDescribe your problem (e.g. "AC not cooling", "water leak in bathroom") and I\'ll find the best contractors near you.',
+          'Hi! 👋 I\'m your AI contractor assistant.\n\nDescribe your problem (e.g. "My AC is not cooling", "I need a cheap electrician near me") and I\'ll find the best contractors for you.',
       quickReplies: _quickReplies,
     ));
 
@@ -374,38 +170,42 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
 
   // ── Composite scoring ────────────────────────────────────
 
-  double _computeScore(_ContractorSuggestion s, {bool boostNearest = false, bool boostRating = false}) {
-    // Rating score: 0-1 (normalized from 0-5)
+  double _computeScore(
+    _ContractorSuggestion s, {
+    bool boostNearest = false,
+    bool boostRating = false,
+  }) {
     final ratingScore = s.rating / 5.0;
-
-    // Distance score: 0-1 (closer = higher), fallback 0.3 if no distance
     double distScore;
     if (s.distKm != null) {
-      distScore = math.max(0, 1.0 - (s.distKm! / 50.0)); // 50km = 0 score
+      distScore = math.max(0, 1.0 - (s.distKm! / 50.0));
     } else {
       distScore = 0.3;
     }
-
-    // Review count score: 0-1 (more reviews = more trustworthy)
     final countScore = math.min(1.0, s.reviewCount / 20.0);
 
-    // Weights adjust based on intent
     double wRating, wDist, wCount;
     if (boostNearest) {
-      wRating = 0.2; wDist = 0.6; wCount = 0.2;
+      wRating = 0.2;
+      wDist = 0.6;
+      wCount = 0.2;
     } else if (boostRating) {
-      wRating = 0.6; wDist = 0.1; wCount = 0.3;
+      wRating = 0.6;
+      wDist = 0.1;
+      wCount = 0.3;
     } else {
-      wRating = 0.4; wDist = 0.3; wCount = 0.3;
+      wRating = 0.4;
+      wDist = 0.3;
+      wCount = 0.3;
     }
 
-    return (ratingScore * wRating) + (distScore * wDist) + (countScore * wCount);
+    return (ratingScore * wRating) +
+        (distScore * wDist) +
+        (countScore * wCount);
   }
 
-  String _generateReason(_ContractorSuggestion s, _ParsedQuery query) {
+  String _generateReason(_ContractorSuggestion s) {
     final parts = <String>[];
-
-    // Rating comment
     if (s.rating >= 4.5 && s.reviewCount >= 5) {
       parts.add('Excellent rating (${s.rating.toStringAsFixed(1)})');
     } else if (s.rating >= 4.0 && s.reviewCount >= 3) {
@@ -415,8 +215,6 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
     } else if (s.reviewCount == 0) {
       parts.add('New on the platform');
     }
-
-    // Distance comment
     if (s.distKm != null) {
       if (s.distKm! < 2) {
         parts.add('very close to you');
@@ -424,46 +222,45 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
         parts.add('nearby');
       }
     }
-
-    // Review count
     if (s.reviewCount >= 10) {
       parts.add('${s.reviewCount} verified reviews');
     } else if (s.reviewCount >= 3) {
       parts.add('${s.reviewCount} reviews');
     }
-
     if (parts.isEmpty) return 'Available in your area';
-    // Capitalize first part
     parts[0] = parts[0][0].toUpperCase() + parts[0].substring(1);
     return parts.join(' · ');
   }
 
-  // ── Fetch top review for a contractor ────────────────────
+  // ── Fetch top reviews for a contractor ───────────────────
 
-  Future<String?> _fetchTopReview(DocumentReference contractorRef) async {
+  Future<List<String>> _fetchTopReviews(
+      DocumentReference contractorRef, int limit) async {
     try {
       final snap = await FirebaseFirestore.instance
           .collection('reviews')
           .where('contractor_ref', isEqualTo: contractorRef)
           .orderBy('rating', descending: true)
-          .limit(1)
+          .limit(limit)
           .get();
-      if (snap.docs.isNotEmpty) {
-        final comment = snap.docs.first.data()['comment'] as String?;
-        if (comment != null && comment.trim().length > 5) {
-          final trimmed = comment.trim();
-          return trimmed.length > 80 ? '${trimmed.substring(0, 77)}...' : trimmed;
-        }
-      }
-    } catch (_) {}
-    return null;
+      return snap.docs
+          .map((d) => (d.data()['comment'] as String?) ?? '')
+          .where((c) => c.trim().length > 5)
+          .map((c) {
+        final t = c.trim();
+        return t.length > 100 ? '${t.substring(0, 97)}...' : t;
+      }).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Query Firestore for contractors ──────────────────────
 
   Future<List<_ContractorSuggestion>> _fetchSuggestions({
     String? category,
-    required _ParsedQuery query,
+    String sortBy = 'best_match',
+    int limit = 3,
   }) async {
     Query q = FirebaseFirestore.instance
         .collection('users')
@@ -478,7 +275,6 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
 
     final suggestions = snap.docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
-      // Filter out paused/deleted contractors
       if (data['paused'] == true || data['deleted'] == true) return false;
       return true;
     }).map((doc) {
@@ -501,7 +297,7 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
             _userPosition!.latitude, _userPosition!.longitude, lat, lng);
       }
 
-      final s = _ContractorSuggestion(
+      return _ContractorSuggestion(
         uid: doc.id,
         ref: doc.reference,
         name: name,
@@ -510,30 +306,30 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
         reviewCount: count,
         photoUrl: photo,
         distKm: dist,
-        reason: '', // Will be set after scoring
+        reason: '',
       );
-      return s;
     }).toList();
 
-    // Score & sort
+    // Score & sort based on AI-determined sort preference
+    final boostNearest = sortBy == 'nearest';
+    final boostRating = sortBy == 'highest_rated';
+
     suggestions.sort((a, b) {
-      final sa = _computeScore(a, boostNearest: query.wantsNearest, boostRating: query.wantsTopRated);
-      final sb = _computeScore(b, boostNearest: query.wantsNearest, boostRating: query.wantsTopRated);
+      final sa = _computeScore(a,
+          boostNearest: boostNearest, boostRating: boostRating);
+      final sb = _computeScore(b,
+          boostNearest: boostNearest, boostRating: boostRating);
       return sb.compareTo(sa);
     });
 
-    // Take top 3 and generate reasons + fetch reviews
-    final top = suggestions.take(3).toList();
+    // Take top N and enrich with reasons + reviews
+    final top = suggestions.take(limit.clamp(1, 3)).toList();
     final enriched = <_ContractorSuggestion>[];
 
     for (int i = 0; i < top.length; i++) {
       final s = top[i];
-      final reason = _generateReason(s, query);
-      String? review;
-      if (i == 0) {
-        // Only fetch review for top pick to keep it fast
-        review = await _fetchTopReview(s.ref);
-      }
+      final reason = _generateReason(s);
+      final reviews = await _fetchTopReviews(s.ref, 3);
       enriched.add(_ContractorSuggestion(
         uid: s.uid,
         ref: s.ref,
@@ -544,14 +340,14 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
         photoUrl: s.photoUrl,
         distKm: s.distKm,
         reason: reason,
-        topReview: review,
+        topReview: reviews.isNotEmpty ? reviews.first : null,
       ));
     }
 
     return enriched;
   }
 
-  // ── Process user input ───────────────────────────────────
+  // ── Process user input via LLM ───────────────────────────
 
   Future<void> _handleUserMessage(String text) async {
     final trimmed = text.trim();
@@ -564,144 +360,91 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
     });
     _scrollToBottom();
 
-    await Future.delayed(const Duration(milliseconds: 600));
+    try {
+      // Step 1: Send to OpenAI for understanding
+      final aiResponse = await _ai.sendMessage(trimmed);
 
-    final query = _parseQuery(trimmed);
-
-    // Handle non-search intents
-    if (query.intent == _Intent.greeting) {
       if (!mounted) return;
-      setState(() {
-        _thinking = false;
-        _messages.add(_Msg(
-          sender: _Sender.bot,
-          text: 'Hello! 👋 How can I help you today? Describe your problem or tap a quick option below.',
-          quickReplies: _quickReplies,
-        ));
-      });
-      _scrollToBottom();
-      return;
-    }
 
-    if (query.intent == _Intent.thanks) {
-      if (!mounted) return;
-      setState(() {
-        _thinking = false;
-        _messages.add(_Msg(
-          sender: _Sender.bot,
-          text: 'You\'re welcome! Let me know if you need anything else. 😊',
-          quickReplies: _quickReplies,
-        ));
-      });
-      _scrollToBottom();
-      return;
-    }
-
-    if (query.intent == _Intent.help) {
-      if (!mounted) return;
-      setState(() {
-        _thinking = false;
-        _messages.add(_Msg(
-          sender: _Sender.bot,
-          text: 'I can help you find the right contractor! Here\'s what I can do:\n\n'
-              '• Describe a problem (e.g. "AC not cooling") and I\'ll find specialists\n'
-              '• Ask for "nearest contractors" to find those close to you\n'
-              '• Ask for "highest rated" to see top-rated pros\n'
-              '• Specify a category like "plumber" or "electrician"\n\n'
-              'Try one of the options below:',
-          quickReplies: _quickReplies,
-        ));
-      });
-      _scrollToBottom();
-      return;
-    }
-
-    // Search intents
-    final effectiveCategory = query.category ?? _lastCategory;
-    if (query.category != null) _lastCategory = query.category;
-
-    List<_ContractorSuggestion> results;
-    String intro;
-
-    switch (query.intent) {
-      case _Intent.highestRated:
-        results = await _fetchSuggestions(category: effectiveCategory, query: query);
-        if (effectiveCategory != null) {
-          intro = 'Here are the top-rated ${_shortCat(effectiveCategory)} contractors:';
-        } else {
-          intro = 'Here are the highest-rated contractors across all categories:';
-        }
-        break;
-
-      case _Intent.nearest:
-        results = await _fetchSuggestions(category: effectiveCategory, query: query);
-        if (_userPosition == null) {
-          intro = '📍 Location not available — showing top-rated contractors instead:';
-        } else if (effectiveCategory != null) {
-          intro = 'Here are the nearest ${_shortCat(effectiveCategory)} contractors to you:';
-        } else {
-          intro = 'Here are the nearest contractors to your location:';
-        }
-        break;
-
-      case _Intent.findByProblem:
-        results = await _fetchSuggestions(category: query.category, query: query);
-        if (results.isEmpty && query.category != null) {
-          // Fallback: search all categories
-          results = await _fetchSuggestions(query: query);
-          intro = 'No exact ${_shortCat(query.category!)} specialists found, but these contractors can help:';
-        } else if (query.problemDescription != null) {
-          intro = 'For your ${query.problemDescription}, here are the best contractors:';
-        } else {
-          intro = 'Here are the best ${_shortCat(query.category!)} contractors for you:';
-        }
-        break;
-
-      default: // general
-        if (_lastCategory != null) {
-          results = await _fetchSuggestions(category: _lastCategory, query: query);
-          intro = 'Here are more ${_shortCat(_lastCategory!)} contractors:';
-        } else {
-          results = await _fetchSuggestions(query: query);
-          intro = 'I\'d love to help! Can you describe your problem in more detail?\n\n'
-              'In the meantime, here are our top-rated contractors:';
-        }
-        break;
-    }
-
-    if (!mounted) return;
-
-    if (results.isEmpty) {
-      setState(() {
-        _thinking = false;
-        _messages.add(_Msg(
-          sender: _Sender.bot,
-          text:
-              'Sorry, I couldn\'t find any contractors matching your request right now. Try a different category or check back later.',
-          quickReplies: _quickReplies,
-        ));
-      });
-    } else {
-      // Build summary line
-      final summaryParts = <String>[];
-      for (int i = 0; i < results.length; i++) {
-        final s = results[i];
-        final r = s.rating > 0 ? '${s.rating.toStringAsFixed(1)}★' : 'New';
-        final d = s.distKm != null ? ' · ${_distLabel(s.distKm!)}' : '';
-        summaryParts.add('${i + 1}. ${s.name} — $r$d');
+      if (aiResponse.type == AIResponseType.text) {
+        // Direct text reply (greeting, thanks, help, etc.)
+        setState(() {
+          _thinking = false;
+          _messages.add(_Msg(
+            sender: _Sender.bot,
+            text: aiResponse.text ?? '',
+            quickReplies: _quickReplies,
+          ));
+        });
+        _scrollToBottom();
+        return;
       }
 
+      // Step 2: AI wants contractor data — execute Firestore query
+      final results = await _fetchSuggestions(
+        category: aiResponse.category,
+        sortBy: aiResponse.sortBy ?? 'best_match',
+        limit: aiResponse.limit ?? 3,
+      );
+
+      if (!mounted) return;
+
+      if (results.isEmpty) {
+        // Tell the AI no results were found
+        final noResultText = await _ai.sendToolResult(
+          toolCallId: aiResponse.toolCallId!,
+          contractorDataJson: jsonEncode({
+            'results': [],
+            'message': 'No contractors found matching the criteria.',
+          }),
+        );
+
+        setState(() {
+          _thinking = false;
+          _messages.add(_Msg(
+            sender: _Sender.bot,
+            text: noResultText,
+            quickReplies: _quickReplies,
+          ));
+        });
+        _scrollToBottom();
+        return;
+      }
+
+      // Step 3: Send contractor data to AI for natural language response
+      final contractorData = results.map((s) => s.toSafeJson()).toList();
+      final aiText = await _ai.sendToolResult(
+        toolCallId: aiResponse.toolCallId!,
+        contractorDataJson: jsonEncode({
+          'results': contractorData,
+          'user_location_available': _userPosition != null,
+        }),
+      );
+
+      if (!mounted) return;
+
       setState(() {
         _thinking = false;
         _messages.add(_Msg(
           sender: _Sender.bot,
-          text: intro,
+          text: aiText,
           suggestions: results,
           quickReplies: _quickReplies,
         ));
       });
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _thinking = false;
+        _messages.add(_Msg(
+          sender: _Sender.bot,
+          text: 'Sorry, something went wrong. Please try again.',
+          quickReplies: _quickReplies,
+        ));
+      });
+      _scrollToBottom();
     }
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
