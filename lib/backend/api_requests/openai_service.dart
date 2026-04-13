@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 /// Groq-powered contractor recommendation service (FREE tier).
@@ -11,36 +11,33 @@ import 'package:http/http.dart' as http;
 /// Free key from: https://console.groq.com
 /// Free tier: 30 RPM, 14,400 RPD, 131K tokens/min
 class OpenAIService {
-  // API key loaded from .env file or passed via --dart-define
-  static const _apiKey = String.fromEnvironment(
-    'GROQ_API_KEY',
-    defaultValue: '',
-  );
   static const _model = 'llama-3.3-70b-versatile';
   static const _endpoint = 'https://api.groq.com/openai/v1/chat/completions';
 
-  /// Resolved API key (from --dart-define or .env file).
-  static String? _resolvedKey;
+  /// Cached API key.
+  static String? _cachedKey;
 
+  /// Load API key from assets/.env
   static Future<String> _getApiKey() async {
-    if (_resolvedKey != null) return _resolvedKey!;
-    if (_apiKey.isNotEmpty) {
-      _resolvedKey = _apiKey;
-      return _resolvedKey!;
+    if (_cachedKey != null) return _cachedKey!;
+    // 1. Try --dart-define
+    const envKey = String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
+    if (envKey.isNotEmpty) {
+      _cachedKey = envKey;
+      return _cachedKey!;
     }
-    // Try loading from .env file
+    // 2. Load from assets/.env
     try {
-      final envFile = File('.env');
-      if (await envFile.exists()) {
-        final lines = await envFile.readAsLines();
-        for (final line in lines) {
-          if (line.startsWith('GROQ_API_KEY=')) {
-            _resolvedKey = line.substring('GROQ_API_KEY='.length).trim();
-            return _resolvedKey!;
-          }
+      final content = await rootBundle.loadString('assets/.env');
+      for (final line in content.split('\n')) {
+        if (line.startsWith('GROQ_API_KEY=')) {
+          _cachedKey = line.substring('GROQ_API_KEY='.length).trim();
+          return _cachedKey!;
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Failed to load .env from assets: $e');
+    }
     return '';
   }
 
