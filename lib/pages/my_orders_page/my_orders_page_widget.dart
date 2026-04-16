@@ -10,6 +10,9 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'my_orders_page_model.dart';
 export 'my_orders_page_model.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '/backend/stripe_config.dart';
 
 // ── Status config ────────────────────────────────────────────────────────────
 ({Color color, String label, IconData icon}) _statusConfig(String status) =>
@@ -444,6 +447,10 @@ class _OrderCard extends StatelessWidget {
     final installmentsPaid = data['installments_paid'] as int? ?? 0;
     final installmentAmount =
         (data['installment_amount'] as num?)?.toDouble() ?? amount;
+    final rawAmounts = data['installment_amounts'] as List<dynamic>?;
+    final installmentAmounts = rawAmounts != null
+        ? rawAmounts.map((e) => (e as num).toDouble()).toList()
+        : List<double>.generate(installmentsTotal, (_) => installmentAmount);
     final monthsCompleted = data['months_completed'] as int? ?? 0;
     final isInstallment = installmentsTotal > 1;
     // Client can pay whenever there are still unpaid months
@@ -500,8 +507,11 @@ class _OrderCard extends StatelessWidget {
       // Confirmed / Partially paid → Timeline + Pay or Waiting
       if (status == 'confirmed' || status == 'partially_paid') {
         final nextMon = installmentsPaid + 1;
+        final nextAmount = installmentAmounts.length > installmentsPaid
+            ? installmentAmounts[installmentsPaid]
+            : installmentAmount;
         final payLabel = isInstallment
-            ? 'Pay Month $nextMon: ${_fmt(installmentAmount)} $currency'
+            ? 'Pay Month $nextMon: ${_fmt(nextAmount)} $currency'
             : 'Pay ${_fmt(amount)} $currency';
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -513,7 +523,7 @@ class _OrderCard extends StatelessWidget {
                   installmentsPaid: installmentsPaid,
                   installmentsTotal: installmentsTotal,
                   monthsCompleted: monthsCompleted,
-                  installmentAmount: installmentAmount,
+                  installmentAmounts: installmentAmounts,
                   currency: currency,
                 ),
                 const SizedBox(height: 10),
@@ -542,7 +552,7 @@ class _OrderCard extends StatelessWidget {
                                 theme,
                                 installmentsPaid,
                                 installmentsTotal,
-                                installmentAmount,
+                                installmentAmounts,
                                 amount,
                                 currency),
                             icon: const Icon(Icons.payment_rounded, size: 18),
@@ -603,7 +613,7 @@ class _OrderCard extends StatelessWidget {
                   installmentsPaid: installmentsPaid,
                   installmentsTotal: installmentsTotal,
                   monthsCompleted: monthsCompleted,
-                  installmentAmount: installmentAmount,
+                  installmentAmounts: installmentAmounts,
                   currency: currency,
                 ),
                 const SizedBox(height: 10),
@@ -690,7 +700,7 @@ class _OrderCard extends StatelessWidget {
                   installmentsPaid: installmentsPaid,
                   installmentsTotal: installmentsTotal,
                   monthsCompleted: monthsCompleted,
-                  installmentAmount: installmentAmount,
+                  installmentAmounts: installmentAmounts,
                   currency: currency,
                 ),
                 const SizedBox(height: 10),
@@ -979,135 +989,147 @@ class _OrderCard extends StatelessWidget {
     FlutterFlowTheme theme,
     int installmentsPaid,
     int installmentsTotal,
-    double installmentAmount,
+    List<double> installmentAmounts,
     double totalAmount,
     String currency,
   ) async {
     final isInstallment = installmentsTotal > 1;
     final title = data['title'] as String? ?? 'Service Order';
 
-    // Installment order → always show full vs monthly choice
     if (isInstallment) {
       await _showPaymentChoiceAndPay(
-          context, theme, installmentAmount, totalAmount, currency, title,
+          context, theme, installmentAmounts, totalAmount, currency, title,
           installmentsTotal, installmentsPaid);
       return;
     }
 
-    // Single payment (non-installment)
-    final payAmount = totalAmount;
-    final installmentNum = installmentsPaid + 1;
-
-    final ok = await showDialog<bool>(
+    // Single payment via Stripe
+    await _processStripePayment(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Confirm Payment',
-            style: GoogleFonts.ubuntu(fontWeight: FontWeight.w700)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: GoogleFonts.ubuntu(
-                    fontWeight: FontWeight.w600, fontSize: 15)),
-            if (isInstallment) ...[
-              const SizedBox(height: 4),
-              Text(
-                  'Installment $installmentNum of $installmentsTotal',
-                  style: GoogleFonts.ubuntu(
-                      color: theme.secondaryText, fontSize: 13)),
-            ],
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                      isInstallment
-                          ? 'This installment:'
-                          : 'Total:',
-                      style: GoogleFonts.ubuntu()),
-                  Text('${_fmt(payAmount)} $currency',
-                      style: GoogleFonts.ubuntu(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: theme.primary)),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text('Cancel',
-                  style:
-                      GoogleFonts.ubuntu(color: theme.secondaryText))),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text('Confirm Payment',
-                style:
-                    GoogleFonts.ubuntu(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
+      amount: totalAmount,
+      currency: currency,
+      newTotalPaid: 1,
+      isFullyPaid: true,
+      installmentsTotal: installmentsTotal,
+      selectedMonths: 1,
     );
-    if (ok != true || !context.mounted) return;
-
-    final newPaid = installmentsPaid + 1;
-    final isFullyPaid = newPaid >= installmentsTotal;
-    try {
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .update({
-        'installments_paid': newPaid,
-        'status': isFullyPaid ? 'paid' : 'partially_paid',
-        if (isFullyPaid) 'paid_at': FieldValue.serverTimestamp(),
-      });
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(
-                isFullyPaid
-                    ? 'Fully paid! ✅'
-                    : 'Installment $newPaid/$installmentsTotal paid ✅',
-                style: GoogleFonts.ubuntu()),
-            backgroundColor: const Color(0xFF4CAF50),
-          ));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-              content:
-                  Text('Error: $e', style: GoogleFonts.ubuntu())));
-      }
-    }
   }
 
   static String _fmt(double v) =>
       v == v.roundToDouble() ? v.round().toString() : v.toStringAsFixed(2);
 
+  Future<void> _processStripePayment({
+    required BuildContext context,
+    required double amount,
+    required String currency,
+    required int newTotalPaid,
+    required bool isFullyPaid,
+    required int installmentsTotal,
+    required int selectedMonths,
+  }) async {
+    // 1. Show custom card form
+    final cardData = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _StripeCardSheet(amount: amount, currency: currency),
+    );
+    if (cardData == null || !context.mounted) return;
+
+    // 2. Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final stripeSecret = await StripeConfig.getSecretKey();
+
+      // Map test card numbers → Stripe pre-built test tokens (avoids raw card API restriction)
+      const testTokens = {
+        '4242424242424242': 'tok_visa',
+        '5555555555554444': 'tok_mastercard',
+        '4000056655665556': 'tok_visa_debit',
+        '4000000000000002': 'tok_chargeDeclined',
+      };
+      final rawNumber = cardData['number']!.replaceAll(' ', '');
+      final token = testTokens[rawNumber];
+      if (token == null) {
+        throw Exception(
+            'Use a test card number.\nVisa: 4242 4242 4242 4242\nMastercard: 5555 5555 5555 4444');
+      }
+
+      final cur = currency.toLowerCase();
+      final units = ['bhd', 'kwd', 'jod', 'omr'].contains(cur)
+          ? (amount * 1000).round()
+          : (amount * 100).round();
+
+      // Charges API with test token — works in test mode without raw card access
+      final chargeRes = await http.post(
+        Uri.parse('https://api.stripe.com/v1/charges'),
+        headers: {
+          'Authorization': 'Bearer $stripeSecret',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'amount': '$units',
+          'currency': cur,
+          'source': token,
+          'description': 'AmanBuild installment payment',
+        },
+      );
+      if (chargeRes.statusCode != 200) {
+        throw Exception(
+            (jsonDecode(chargeRes.body) as Map)['error']?['message'] ?? 'Payment error');
+      }
+      final chargeStatus =
+          (jsonDecode(chargeRes.body) as Map<String, dynamic>)['status'] as String;
+      if (chargeStatus != 'succeeded') {
+        throw Exception('Payment not completed (status: $chargeStatus)');
+      }
+
+      // 5. Update Firestore
+      await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(orderId)
+          .update({
+        'installments_paid': newTotalPaid,
+        'status': isFullyPaid ? 'paid' : 'partially_paid',
+        if (isFullyPaid) 'paid_at': FieldValue.serverTimestamp(),
+      });
+
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            content: Text(
+              isFullyPaid
+                  ? 'Full payment done! ✅'
+                  : '$selectedMonths month${selectedMonths > 1 ? "s" : ""} paid ✅',
+              style: GoogleFonts.ubuntu(),
+            ),
+            backgroundColor: const Color(0xFF4CAF50),
+          ));
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            content: Text('Payment failed: $e', style: GoogleFonts.ubuntu()),
+            backgroundColor: Colors.red,
+          ));
+      }
+    }
+  }
+
   Future<void> _showPaymentChoiceAndPay(
     BuildContext context,
     FlutterFlowTheme theme,
-    double installmentAmount,
+    List<double> installmentAmounts,
     double totalAmount,
     String currency,
     String title,
@@ -1115,8 +1137,22 @@ class _OrderCard extends StatelessWidget {
     int installmentsPaid,
   ) async {
     final remainingMonths = installmentsTotal - installmentsPaid;
-    final remainingTotal = installmentAmount * remainingMonths;
-    // Returns: 'full' = pay all, '1','2',... = pay N months
+
+    // Sum of all unpaid months from the per-month list
+    double remainingTotal = 0;
+    for (int i = installmentsPaid; i < installmentAmounts.length; i++) {
+      remainingTotal += installmentAmounts[i];
+    }
+
+    // Sum of next n months starting from installmentsPaid
+    double calcPartialTotal(int n) {
+      double sum = 0;
+      for (int i = 0; i < n && (installmentsPaid + i) < installmentAmounts.length; i++) {
+        sum += installmentAmounts[installmentsPaid + i];
+      }
+      return sum;
+    }
+
     int monthCount = 1;
     final choice = await showModalBottomSheet<String>(
       context: context,
@@ -1124,7 +1160,7 @@ class _OrderCard extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) {
-          final partialTotal = installmentAmount * monthCount;
+          final partialTotal = calcPartialTotal(monthCount);
           return Material(
             color: Colors.transparent,
             child: Container(
@@ -1343,90 +1379,20 @@ class _OrderCard extends StatelessWidget {
     final int selectedMonths =
         choice == 'full' ? remainingMonths : (int.tryParse(choice) ?? 1);
     final double payAmount =
-        choice == 'full' ? remainingTotal : installmentAmount * selectedMonths;
+        choice == 'full' ? remainingTotal : calcPartialTotal(selectedMonths);
+    final int newTotalPaid = installmentsPaid + selectedMonths;
+    final bool isFullyPaid = newTotalPaid >= installmentsTotal;
 
-    final ok = await showDialog<bool>(
+    // Stripe handles the confirmation — no dialog needed
+    await _processStripePayment(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-            choice == 'full'
-                ? 'Pay Full Amount'
-                : 'Pay $selectedMonths Month${selectedMonths > 1 ? "s" : ""}',
-            style: GoogleFonts.ubuntu(fontWeight: FontWeight.w700)),
-        content: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.primary.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(choice == 'full' ? 'Total:' : 'Amount:',
-                  style: GoogleFonts.ubuntu()),
-              Text('${_fmt(payAmount)} $currency',
-                  style: GoogleFonts.ubuntu(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: theme.primary)),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel',
-                style: GoogleFonts.ubuntu(color: theme.secondaryText)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text('Confirm',
-                style: GoogleFonts.ubuntu(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
+      amount: payAmount,
+      currency: currency,
+      newTotalPaid: newTotalPaid,
+      isFullyPaid: isFullyPaid,
+      installmentsTotal: installmentsTotal,
+      selectedMonths: selectedMonths,
     );
-    if (ok != true || !context.mounted) return;
-
-    final newTotalPaid = installmentsPaid + selectedMonths;
-    final isFullyPaid = newTotalPaid >= installmentsTotal;
-    try {
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .update({
-        'installments_paid': newTotalPaid,
-        'status': isFullyPaid ? 'paid' : 'partially_paid',
-        if (isFullyPaid) 'paid_at': FieldValue.serverTimestamp(),
-      });
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(
-                isFullyPaid
-                    ? 'Full payment done! ✅'
-                    : '$selectedMonths month${selectedMonths > 1 ? "s" : ""} paid ✅',
-                style: GoogleFonts.ubuntu()),
-            backgroundColor: const Color(0xFF4CAF50),
-          ));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-              content: Text('Error: $e', style: GoogleFonts.ubuntu())));
-      }
-    }
   }
 
   Future<void> _markMonthComplete(
@@ -1603,11 +1569,11 @@ class _MonthsTimeline extends StatelessWidget {
     required this.installmentsPaid,
     required this.installmentsTotal,
     required this.monthsCompleted,
-    required this.installmentAmount,
+    required this.installmentAmounts,
     required this.currency,
   });
   final int installmentsPaid, installmentsTotal, monthsCompleted;
-  final double installmentAmount;
+  final List<double> installmentAmounts;
   final String currency;
 
   static String _fmt(double v) =>
@@ -1679,7 +1645,7 @@ class _MonthsTimeline extends StatelessWidget {
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: theme.primaryText)),
-                          Text('${_fmt(installmentAmount)} $currency',
+                          Text('${_fmt(installmentAmounts.length > i ? installmentAmounts[i] : 0)} $currency',
                               style: GoogleFonts.ubuntu(
                                   fontSize: 11,
                                   color: theme.secondaryText)),
@@ -1955,6 +1921,218 @@ class _DetailRow extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: valueColor ?? theme.primaryText)),
         ],
+      ),
+    );
+  }
+}
+
+// ── Custom Stripe card input sheet ───────────────────────────────────────────
+class _StripeCardSheet extends StatefulWidget {
+  const _StripeCardSheet({required this.amount, required this.currency});
+  final double amount;
+  final String currency;
+
+  @override
+  State<_StripeCardSheet> createState() => _StripeCardSheetState();
+}
+
+class _StripeCardSheetState extends State<_StripeCardSheet> {
+  final _cardCtrl = TextEditingController();
+  final _expiryCtrl = TextEditingController();
+  final _cvcCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  static String _fmt(double v) =>
+      v == v.roundToDouble() ? v.round().toString() : v.toStringAsFixed(2);
+
+  String _formatCard(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    final buf = StringBuffer();
+    for (int i = 0; i < digits.length && i < 16; i++) {
+      if (i > 0 && i % 4 == 0) buf.write(' ');
+      buf.write(digits[i]);
+    }
+    return buf.toString();
+  }
+
+  String _formatExpiry(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.length <= 2) return digits;
+    return '${digits.substring(0, 2)}/${digits.substring(2, digits.length.clamp(0, 4))}';
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    final expParts = _expiryCtrl.text.split('/');
+    Navigator.of(context).pop(<String, String>{
+      'number': _cardCtrl.text,
+      'exp_month': expParts[0].trim(),
+      'exp_year': expParts.length > 1 ? expParts[1].trim() : '',
+      'cvc': _cvcCtrl.text,
+    });
+  }
+
+  @override
+  void dispose() {
+    _cardCtrl.dispose();
+    _expiryCtrl.dispose();
+    _cvcCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.secondaryBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.alternate,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.credit_card_rounded, size: 22),
+                  const SizedBox(width: 10),
+                  Text('Card Payment',
+                      style: GoogleFonts.ubuntu(
+                          fontWeight: FontWeight.w700, fontSize: 18)),
+                  const Spacer(),
+                  Text('${_fmt(widget.amount)} ${widget.currency}',
+                      style: GoogleFonts.ubuntu(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: theme.primary)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                  'Test cards: Visa 4242 4242 4242 4242  |  MC 5555 5555 5555 4444\nExpiry: any future date  •  CVC: any 3 digits',
+                  style: GoogleFonts.ubuntu(
+                      fontSize: 11, color: theme.secondaryText)),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _cardCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Card Number',
+                  prefixIcon:
+                      const Icon(Icons.credit_card_rounded, size: 20),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                onChanged: (v) {
+                  final formatted = _formatCard(v);
+                  if (formatted != v) {
+                    _cardCtrl.value = TextEditingValue(
+                      text: formatted,
+                      selection: TextSelection.collapsed(
+                          offset: formatted.length),
+                    );
+                  }
+                },
+                validator: (v) {
+                  final digits = (v ?? '').replaceAll(' ', '');
+                  if (digits.length < 13) return 'Enter valid card number';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _expiryCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'MM/YY',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onChanged: (v) {
+                        final formatted = _formatExpiry(v);
+                        if (formatted != v) {
+                          _expiryCtrl.value = TextEditingValue(
+                            text: formatted,
+                            selection: TextSelection.collapsed(
+                                offset: formatted.length),
+                          );
+                        }
+                      },
+                      validator: (v) {
+                        if (v == null ||
+                            !RegExp(r'^\d{2}/\d{2,4}$').hasMatch(v)) {
+                          return 'Invalid expiry';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _cvcCtrl,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: 4,
+                      decoration: InputDecoration(
+                        labelText: 'CVC',
+                        counterText: '',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      validator: (v) {
+                        if ((v?.length ?? 0) < 3) return 'Invalid CVC';
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: _submit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                    'Pay ${_fmt(widget.amount)} ${widget.currency}',
+                    style: GoogleFonts.ubuntu(
+                        fontWeight: FontWeight.w600, fontSize: 15)),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancel',
+                    style:
+                        GoogleFonts.ubuntu(color: theme.secondaryText)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

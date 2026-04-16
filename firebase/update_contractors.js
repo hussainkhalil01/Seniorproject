@@ -1,6 +1,6 @@
 // update_contractors.js
 // Run: node update_contractors.js
-// Updates the 20 existing contractor accounts with new categories & titles
+// Updates the 20 existing contractor accounts with new categories, titles & descriptions
 
 const { initializeApp } = require("firebase/app");
 const {
@@ -32,37 +32,158 @@ const db = getFirestore(app);
 
 const PASSWORD = "Testtest1@";
 
-// 20 accounts: 4 per category with proper professional titles
+// Category distribution (2-3 per category, some contractors in multiple categories):
+// Contractors & Handymen: SolidHands, Hassan Jaber, Workora, FixHub (secondary)
+// Plumbers:               PrimeBuild, Ibrahim Saeed
+// Electricians:           Serviq, Omar Farooq, FixHub
+// Heating:                EliteWorks, Bilal Ahmad, Fixora
+// Air Conditioning:       EliteWorks, Bilal Ahmad, Fixora
+// Locksmiths:             Adnan Malik, Rami Haddad
+// Painters:               Ali Kareem, HandyFlow
+// Tree Services:          Tariq Al-Harthy, Sami Zidan
+// Movers:                 MasterCrew, HandyFlow Pro, TaskMatch
+
 const contractors = [
-  // HVAC (Air Conditioning) - 4 accounts
-  { email: "PrimeBuildaman@gmail.com",      title: "HVAC (Air Conditioning)",              name: "PrimeBuild",       desc: "Expert in AC installation, maintenance, and central cooling systems." },
-  { email: "EliteWorksaman@gmail.com",      title: "HVAC (Air Conditioning)",              name: "EliteWorks",       desc: "Specializing in split AC units, duct cleaning, and HVAC repairs." },
-  { email: "HassanJaberaman@gmail.com",     title: "HVAC (Air Conditioning)",              name: "Hassan Jaber",     desc: "Professional air conditioning technician for residential and commercial projects." },
-  { email: "Fixoraaman@gmail.com",          title: "HVAC (Air Conditioning)",              name: "Fixora",           desc: "Certified HVAC specialist with expertise in smart climate control systems." },
-
-  // Electrical Services - 4 accounts
-  { email: "Serviqaman@gmail.com",          title: "Electrical Services",                  name: "Serviq",           desc: "Licensed electrician for wiring, panel upgrades, and electrical safety inspections." },
-  { email: "OmarFarooqaman@gmail.com",      title: "Electrical Services",                  name: "Omar Farooq",      desc: "Expert in residential and commercial electrical installations." },
-  { email: "FixHubaman@gmail.com",          title: "Electrical Services",                  name: "FixHub",           desc: "Electrical engineer specializing in smart home wiring and lighting solutions." },
-  { email: "SamiZidanaman@gmail.com",       title: "Electrical Services",                  name: "Sami Zidan",       desc: "Professional electrician for power systems, outlets, and circuit repairs." },
-
-  // Plumbing - 4 accounts
-  { email: "IbrahimSaeedaman@gmail.com",    title: "Plumbing",                             name: "Ibrahim Saeed",    desc: "Licensed plumber for pipe installation, leak repairs, and water heater services." },
-  { email: "HandyFlowaman@gmail.com",       title: "Plumbing",                             name: "HandyFlow",        desc: "Expert in bathroom plumbing, drain cleaning, and fixture installation." },
-  { email: "AdnanMalikaman@gmail.com",      title: "Plumbing",                             name: "Adnan Malik",      desc: "Reliable plumbing professional for emergency repairs and new installations." },
-  { email: "RamiHaddadaman@gmail.com",      title: "Plumbing",                             name: "Rami Haddad",      desc: "Specializing in kitchen plumbing, water filtration, and sewer line services." },
-
-  // General Construction & Renovation - 4 accounts
-  { email: "SolidHandsaman@gmail.com",      title: "General Construction & Renovation",    name: "SolidHands",       desc: "Full-service contractor for home building, additions, and major renovations." },
-  { email: "Workoraaman@gmail.com",         title: "General Construction & Renovation",    name: "Workora",          desc: "General contractor specializing in villa construction and structural renovations." },
-  { email: "TariqAlHarthyaman@gmail.com",   title: "General Construction & Renovation",    name: "Tariq Al-Harthy",  desc: "Experienced in roofing, foundations, and complete building renovations." },
-  { email: "TaskMatchaman@gmail.com",       title: "General Construction & Renovation",    name: "TaskMatch",        desc: "Site supervisor and project manager for construction and renovation projects." },
-
-  // Interior Finishing - 4 accounts
-  { email: "AliKareemaman@gmail.com",       title: "Interior Finishing",                   name: "Ali Kareem",       desc: "Professional painter and interior finishing expert for walls, ceilings, and trim." },
-  { email: "MasterCrewaman@gmail.com",      title: "Interior Finishing",                   name: "MasterCrew",       desc: "Tile installation, flooring, and interior finishing specialist." },
-  { email: "BilalAhmadaman@gmail.com",      title: "Interior Finishing",                   name: "Bilal Ahmad",      desc: "Skilled carpenter for custom cabinetry, doors, and wood finishing." },
-  { email: "HandyFlowProaman@gmail.com",    title: "Interior Finishing",                   name: "HandyFlow Pro",    desc: "Expert in gypsum board, false ceilings, and decorative wall finishes." },
+  {
+    email: "PrimeBuildaman@gmail.com",
+    name: "PrimeBuild",
+    title: "Expert Plumber",
+    categories: ["Plumbers"],
+    desc: "Specializing in pipe repairs, installations, and all plumbing needs for residential and commercial properties.",
+  },
+  {
+    email: "Serviqaman@gmail.com",
+    name: "Serviq",
+    title: "Licensed Electrician",
+    categories: ["Electricians"],
+    desc: "Certified electrician offering wiring, panel upgrades, and electrical safety inspections.",
+  },
+  {
+    email: "AliKareemaman@gmail.com",
+    name: "Ali Kareem",
+    title: "Professional Painter",
+    categories: ["Painters"],
+    desc: "Skilled painter delivering premium interior and exterior painting with flawless finishes.",
+  },
+  {
+    email: "EliteWorksaman@gmail.com",
+    name: "EliteWorks",
+    title: "Heating & AC Specialist",
+    categories: ["Heating", "Air Conditioning"],
+    desc: "Full-service HVAC expert offering heating and air conditioning installation, repair, and maintenance.",
+  },
+  {
+    email: "SolidHandsaman@gmail.com",
+    name: "SolidHands",
+    title: "General Contractor",
+    categories: ["Contractors & Handymen"],
+    desc: "Reliable contractor for all home repairs, renovations, and handyman tasks.",
+  },
+  {
+    email: "OmarFarooqaman@gmail.com",
+    name: "Omar Farooq",
+    title: "Electrician",
+    categories: ["Electricians"],
+    desc: "Experienced electrician with 10+ years handling residential and commercial electrical systems.",
+  },
+  {
+    email: "IbrahimSaeedaman@gmail.com",
+    name: "Ibrahim Saeed",
+    title: "Plumber",
+    categories: ["Plumbers"],
+    desc: "Fast and dependable plumbing services including leak repairs, drain cleaning, and pipe installations.",
+  },
+  {
+    email: "HandyFlowaman@gmail.com",
+    name: "HandyFlow",
+    title: "Painting Contractor",
+    categories: ["Painters"],
+    desc: "Interior and exterior painting specialist with a keen eye for detail and lasting results.",
+  },
+  {
+    email: "HassanJaberaman@gmail.com",
+    name: "Hassan Jaber",
+    title: "Handyman",
+    categories: ["Contractors & Handymen"],
+    desc: "Your go-to handyman for all household maintenance, repairs, and improvement projects.",
+  },
+  {
+    email: "Workoraaman@gmail.com",
+    name: "Workora",
+    title: "General Contractor & Handyman",
+    categories: ["Contractors & Handymen"],
+    desc: "Versatile contractor handling everything from minor fixes to full-scale home renovations.",
+  },
+  {
+    email: "TariqAlHarthyaman@gmail.com",
+    name: "Tariq Al-Harthy",
+    title: "Tree Services Specialist",
+    categories: ["Tree Services"],
+    desc: "Expert tree trimming, pruning, and removal. Keeping your property safe and looking its best.",
+  },
+  {
+    email: "FixHubaman@gmail.com",
+    name: "FixHub",
+    title: "Electrician & Handyman",
+    categories: ["Electricians", "Contractors & Handymen"],
+    desc: "Multi-skilled professional providing electrical repairs and handyman services for homes and businesses.",
+  },
+  {
+    email: "MasterCrewaman@gmail.com",
+    name: "MasterCrew",
+    title: "Professional Mover",
+    categories: ["Movers"],
+    desc: "Reliable moving crew for residential and commercial relocations, handled with care and efficiency.",
+  },
+  {
+    email: "BilalAhmadaman@gmail.com",
+    name: "Bilal Ahmad",
+    title: "HVAC Technician",
+    categories: ["Air Conditioning", "Heating"],
+    desc: "Skilled technician specializing in air conditioning and heating system installation, servicing, and repair.",
+  },
+  {
+    email: "AdnanMalikaman@gmail.com",
+    name: "Adnan Malik",
+    title: "Locksmith",
+    categories: ["Locksmiths"],
+    desc: "Available 24/7 for lock installations, key cutting, and emergency lockout services.",
+  },
+  {
+    email: "Fixoraaman@gmail.com",
+    name: "Fixora",
+    title: "AC & Heating Technician",
+    categories: ["Air Conditioning", "Heating"],
+    desc: "Expert in cooling and heating solutions. Fast diagnosis and reliable repairs for all HVAC systems.",
+  },
+  {
+    email: "RamiHaddadaman@gmail.com",
+    name: "Rami Haddad",
+    title: "Locksmith",
+    categories: ["Locksmiths"],
+    desc: "Trusted locksmith providing security upgrades, lock replacements, and smart lock installations.",
+  },
+  {
+    email: "HandyFlowProaman@gmail.com",
+    name: "HandyFlow Pro",
+    title: "Moving & Relocation Expert",
+    categories: ["Movers"],
+    desc: "Full-service moving company offering packing, transport, and unpacking for stress-free moves.",
+  },
+  {
+    email: "SamiZidanaman@gmail.com",
+    name: "Sami Zidan",
+    title: "Tree Care Professional",
+    categories: ["Tree Services"],
+    desc: "Certified arborist offering tree pruning, removal, stump grinding, and landscape maintenance.",
+  },
+  {
+    email: "TaskMatchaman@gmail.com",
+    name: "TaskMatch",
+    title: "Moving Coordinator",
+    categories: ["Movers"],
+    desc: "Professional moving service for local and long-distance relocations with careful handling.",
+  },
 ];
 
 async function update() {
@@ -71,10 +192,8 @@ async function update() {
 
   for (const c of contractors) {
     try {
-      // Sign in as this contractor to get auth (needed for Firestore read)
       const cred = await signInWithEmailAndPassword(auth, c.email, PASSWORD);
 
-      // Find the user document by email
       const q = query(collection(db, "users"), where("email", "==", c.email));
       const snap = await getDocs(q);
 
@@ -86,16 +205,15 @@ async function update() {
 
       const docRef = snap.docs[0].ref;
 
-      // Update title, categories, and description
       await updateDoc(docRef, {
         title: c.title,
-        categories: [c.title],
+        categories: c.categories,
         short_description: c.desc,
       });
 
       await signOut(auth);
       updated++;
-      console.log(`[${updated}] UPDATED: ${c.name} -> ${c.title}`);
+      console.log(`[${updated}] UPDATED: ${c.name} → [${c.categories.join(", ")}]`);
     } catch (err) {
       errors++;
       console.log(`[ERROR] ${c.email}: ${err.message}`);

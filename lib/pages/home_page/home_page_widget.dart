@@ -398,47 +398,83 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           },
                         ),
                         _HomeCategory(
-                          label: 'HVAC (Air Conditioning)',
+                          label: 'Contractors & Handymen',
                           selected:
-                              FFAppState().selectedCategory == 'HVAC (Air Conditioning)',
+                              FFAppState().selectedCategory == 'Contractors & Handymen',
                           onTap: () {
-                            FFAppState().selectedCategory = 'HVAC (Air Conditioning)';
+                            FFAppState().selectedCategory = 'Contractors & Handymen';
                             safeSetState(() {});
                           },
                         ),
                         _HomeCategory(
-                          label: 'Electrical Services',
+                          label: 'Plumbers',
                           selected:
-                              FFAppState().selectedCategory == 'Electrical Services',
+                              FFAppState().selectedCategory == 'Plumbers',
                           onTap: () {
-                            FFAppState().selectedCategory = 'Electrical Services';
+                            FFAppState().selectedCategory = 'Plumbers';
                             safeSetState(() {});
                           },
                         ),
                         _HomeCategory(
-                          label: 'Plumbing',
+                          label: 'Electricians',
                           selected:
-                              FFAppState().selectedCategory == 'Plumbing',
+                              FFAppState().selectedCategory == 'Electricians',
                           onTap: () {
-                            FFAppState().selectedCategory = 'Plumbing';
+                            FFAppState().selectedCategory = 'Electricians';
                             safeSetState(() {});
                           },
                         ),
                         _HomeCategory(
-                          label: 'General Construction & Renovation',
+                          label: 'Heating',
                           selected:
-                              FFAppState().selectedCategory == 'General Construction & Renovation',
+                              FFAppState().selectedCategory == 'Heating',
                           onTap: () {
-                            FFAppState().selectedCategory = 'General Construction & Renovation';
+                            FFAppState().selectedCategory = 'Heating';
                             safeSetState(() {});
                           },
                         ),
                         _HomeCategory(
-                          label: 'Interior Finishing',
+                          label: 'Air Conditioning',
                           selected:
-                              FFAppState().selectedCategory == 'Interior Finishing',
+                              FFAppState().selectedCategory == 'Air Conditioning',
                           onTap: () {
-                            FFAppState().selectedCategory = 'Interior Finishing';
+                            FFAppState().selectedCategory = 'Air Conditioning';
+                            safeSetState(() {});
+                          },
+                        ),
+                        _HomeCategory(
+                          label: 'Locksmiths',
+                          selected:
+                              FFAppState().selectedCategory == 'Locksmiths',
+                          onTap: () {
+                            FFAppState().selectedCategory = 'Locksmiths';
+                            safeSetState(() {});
+                          },
+                        ),
+                        _HomeCategory(
+                          label: 'Painters',
+                          selected:
+                              FFAppState().selectedCategory == 'Painters',
+                          onTap: () {
+                            FFAppState().selectedCategory = 'Painters';
+                            safeSetState(() {});
+                          },
+                        ),
+                        _HomeCategory(
+                          label: 'Tree Services',
+                          selected:
+                              FFAppState().selectedCategory == 'Tree Services',
+                          onTap: () {
+                            FFAppState().selectedCategory = 'Tree Services';
+                            safeSetState(() {});
+                          },
+                        ),
+                        _HomeCategory(
+                          label: 'Movers',
+                          selected:
+                              FFAppState().selectedCategory == 'Movers',
+                          onTap: () {
+                            FFAppState().selectedCategory = 'Movers';
                             safeSetState(() {});
                           },
                         ),
@@ -535,8 +571,8 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       queryBuilder: (q) {
                         q = q.where('role', isEqualTo: 'service_provider');
                         if (FFAppState().selectedCategory.isNotEmpty) {
-                          q = q.where('title',
-                              isEqualTo: FFAppState().selectedCategory);
+                          q = q.where('categories',
+                              arrayContains: FFAppState().selectedCategory);
                         }
                         return q.orderBy('created_time', descending: true);
                       },

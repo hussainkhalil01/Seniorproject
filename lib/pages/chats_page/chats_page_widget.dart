@@ -17,11 +17,15 @@ export 'chats_page_model.dart';
 //  Quick Service Request categories
 // ─────────────────────────────────────────────────────────
 const _kServiceCategories = [
-  'HVAC (Air Conditioning)',
-  'Electrical Services',
-  'Plumbing',
-  'General Construction & Renovation',
-  'Interior Finishing',
+  'Contractors & Handymen',
+  'Plumbers',
+  'Electricians',
+  'Heating',
+  'Air Conditioning',
+  'Locksmiths',
+  'Painters',
+  'Tree Services',
+  'Movers',
 ];
 
 // ── AI Assistant pinned tile ──────────────────────────────
