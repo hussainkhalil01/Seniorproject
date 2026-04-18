@@ -44,6 +44,7 @@ class _ContractorSuggestion {
   final String photoUrl;
   final String reason;
   final String? topReview;
+  final String shortDescription;
 
   _ContractorSuggestion({
     required this.uid,
@@ -54,6 +55,7 @@ class _ContractorSuggestion {
     required this.reviewCount,
     required this.photoUrl,
     required this.reason,
+    required this.shortDescription,
     this.distKm,
     this.topReview,
   });
@@ -67,6 +69,8 @@ class _ContractorSuggestion {
         if (distKm != null)
           'distance_km': double.parse(distKm!.toStringAsFixed(1)),
         if (topReview != null) 'top_review': topReview,
+        if (shortDescription.trim().isNotEmpty)
+          'profile_summary': shortDescription.trim(),
       };
 }
 
@@ -257,6 +261,29 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
 
   // ── Query Firestore for contractors ──────────────────────
 
+  List<String> _mapAiCategoryToDbCategories(String category) {
+    switch (category.trim()) {
+      case 'HVAC (Air Conditioning)':
+        return ['Air Conditioning', 'Heating'];
+      case 'Electrical Services':
+        return ['Electricians'];
+      case 'Plumbing':
+        return ['Plumbers'];
+      case 'General Construction & Renovation':
+        return ['Contractors & Handymen'];
+      case 'Interior Finishing':
+        return ['Painters'];
+      case 'Tree Services':
+        return ['Tree Services'];
+      case 'Movers':
+        return ['Movers'];
+      case 'Locksmiths':
+        return ['Locksmiths'];
+      default:
+        return [category];
+    }
+  }
+
   Future<List<_ContractorSuggestion>> _fetchSuggestions({
     String? category,
     String sortBy = 'best_match',
@@ -267,8 +294,13 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
         .where('role', isEqualTo: 'service_provider')
         .where('is_disabled', isEqualTo: false);
 
-    if (category != null) {
-      q = q.where('categories', arrayContains: category);
+    if (category != null && category.trim().isNotEmpty) {
+      final mappedCategories = _mapAiCategoryToDbCategories(category);
+      if (mappedCategories.length == 1) {
+        q = q.where('categories', arrayContains: mappedCategories.first);
+      } else {
+        q = q.where('categories', arrayContainsAny: mappedCategories);
+      }
     }
 
     final snap = await q.get();
@@ -288,6 +320,8 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
       final rating = (data['rating_avg'] as num?)?.toDouble() ?? 0.0;
       final count = (data['rating_count'] as num?)?.toInt() ?? 0;
       final photo = (data['photo_url'] as String?) ?? '';
+      final shortDescription =
+          (data['short_description'] as String?) ?? '';
       final lat = (data['latitude'] as num?)?.toDouble() ?? 0.0;
       final lng = (data['longitude'] as num?)?.toDouble() ?? 0.0;
 
@@ -307,6 +341,7 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
         photoUrl: photo,
         distKm: dist,
         reason: '',
+        shortDescription: shortDescription,
       );
     }).toList();
 
@@ -340,6 +375,7 @@ class _AiChatPageWidgetState extends State<AiChatPageWidget> {
         photoUrl: s.photoUrl,
         distKm: s.distKm,
         reason: reason,
+        shortDescription: s.shortDescription,
         topReview: reviews.isNotEmpty ? reviews.first : null,
       ));
     }

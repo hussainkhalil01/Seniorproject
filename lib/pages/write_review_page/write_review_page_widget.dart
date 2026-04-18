@@ -10,10 +10,12 @@ class WriteReviewPageWidget extends StatefulWidget {
     super.key,
     required this.contractorRef,
     required this.contractorName,
+    required this.orderId,
   });
 
   final DocumentReference contractorRef;
   final String contractorName;
+  final String orderId;
 
   static String routeName = 'WriteReviewPage';
   static String routePath = '/writeReviewPage';
@@ -34,6 +36,14 @@ class _WriteReviewPageWidgetState extends State<WriteReviewPageWidget> {
   }
 
   Future<void> _submit() async {
+    if (widget.orderId.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Review can only be submitted from a completed order.')),
+      );
+      return;
+    }
     if (_selectedStars == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a star rating.')),
@@ -50,7 +60,45 @@ class _WriteReviewPageWidgetState extends State<WriteReviewPageWidget> {
     setState(() => _submitting = true);
 
     try {
-      await FirebaseFirestore.instance.collection('reviews').add({
+      final orderSnap = await FirebaseFirestore.instance
+          .collection('orders')
+          .doc(widget.orderId)
+          .get();
+      if (!orderSnap.exists) {
+        throw Exception('Order not found.');
+      }
+
+      final orderData = orderSnap.data()!;
+      final clientUid = orderData['client_uid'] as String? ?? '';
+      final status = orderData['status'] as String? ?? '';
+      if (clientUid != currentUserUid) {
+        throw Exception('Only the order client can submit a review.');
+      }
+      if (status != 'completed') {
+        throw Exception('Review is only allowed after order completion.');
+      }
+
+      final orderProviderRef = orderData['provider_ref'];
+      if (orderProviderRef is DocumentReference &&
+          orderProviderRef.path != widget.contractorRef.path) {
+        throw Exception('Invalid contractor for this order review.');
+      }
+
+      final reviewDocId = '${widget.orderId}_$currentUserUid';
+      final reviewRef =
+          FirebaseFirestore.instance.collection('reviews').doc(reviewDocId);
+      final existingReview = await reviewRef.get();
+      if (existingReview.exists) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You already submitted this review.')),
+        );
+        context.pop();
+        return;
+      }
+
+      await reviewRef.set({
+        'order_id': widget.orderId,
         'contractor_ref': widget.contractorRef,
         'reviewer_uid': currentUserUid,
         'reviewer_name': currentUserDisplayName.isNotEmpty

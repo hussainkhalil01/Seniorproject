@@ -638,6 +638,10 @@ class _OrderCard extends StatelessWidget {
           ),
         );
       }
+      // Completed -> can review once
+      if (status == 'completed') {
+        return _buildClientCompletedActions(context, theme);
+      }
     }
 
     // ── PROVIDER ─────────────────────────────────────────────────────────────
@@ -870,6 +874,121 @@ class _OrderCard extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => _OrderDetailSheet(
           orderId: orderId, data: data, isProvider: isProvider),
+    );
+  }
+
+  Widget _buildClientCompletedActions(
+      BuildContext context, FlutterFlowTheme theme) {
+    final rawProviderRef = data['provider_ref'];
+    DocumentReference? providerRef;
+    if (rawProviderRef is DocumentReference) {
+      providerRef = rawProviderRef;
+    } else {
+      final providerUid = data['provider_uid'] as String? ?? '';
+      if (providerUid.isNotEmpty) {
+        providerRef =
+            FirebaseFirestore.instance.collection('users').doc(providerUid);
+      }
+    }
+
+    if (providerRef == null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () => _showDetail(context),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: theme.alternate),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: Text('View Details',
+                style: GoogleFonts.ubuntu(color: theme.primaryText)),
+          ),
+        ),
+      );
+    }
+
+    final providerName = data['provider_name'] as String? ?? 'Provider';
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('reviews')
+          .where('order_id', isEqualTo: orderId)
+          .where('reviewer_uid', isEqualTo: currentUserUid)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final hasReview = (snapshot.data?.docs ?? []).isNotEmpty;
+        final isChecking = snapshot.connectionState == ConnectionState.waiting;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Row(
+            children: [
+              OutlinedButton(
+                onPressed: () => _showDetail(context),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: theme.alternate),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                ),
+                child: Text('Details',
+                    style: GoogleFonts.ubuntu(
+                        fontSize: 14, color: theme.primaryText)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: (isChecking || hasReview)
+                      ? null
+                      : () => context.pushNamed(
+                            WriteReviewPageWidget.routeName,
+                            queryParameters: {
+                              'contractorRef': serializeParam(
+                                providerRef,
+                                ParamType.DocumentReference,
+                              ),
+                              'contractorName':
+                                  serializeParam(providerName, ParamType.String),
+                              'orderId':
+                                  serializeParam(orderId, ParamType.String),
+                            }.withoutNulls,
+                          ),
+                  icon: Icon(
+                    hasReview ? Icons.check_circle_rounded : Icons.rate_review,
+                    size: 18,
+                  ),
+                  label: Text(
+                    hasReview
+                        ? 'Review Submitted'
+                        : isChecking
+                            ? 'Checking Review...'
+                            : 'Write a Review',
+                    style: GoogleFonts.ubuntu(
+                        fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor:
+                        hasReview ? theme.secondaryText : theme.primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor:
+                        theme.secondaryText.withValues(alpha: 0.5),
+                    disabledForegroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

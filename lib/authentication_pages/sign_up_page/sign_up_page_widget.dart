@@ -1,4 +1,5 @@
 import '/components/email_confirm_dialog_widget.dart';
+import '/components/terms_dialog_widget.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/custom_code/actions/index.dart' as actions;
@@ -622,6 +623,22 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                       ScaffoldMessenger.of(context);
                                   final theme = FlutterFlowTheme.of(context);
 
+                                  // Step 1: Show Terms & Conditions dialog
+                                  final agreedToTerms =
+                                      await showDialog<bool>(
+                                    barrierDismissible: false,
+                                    context: context,
+                                    builder: (_) => const Dialog(
+                                      elevation: 0,
+                                      insetPadding: EdgeInsets.zero,
+                                      backgroundColor: Colors.transparent,
+                                      child: TermsDialogWidget(),
+                                    ),
+                                  );
+                                  if (agreedToTerms != true) return;
+                                  if (!context.mounted) return;
+
+                                  // Step 2: Confirm email address
                                   await showDialog(
                                     barrierColor: Colors.transparent,
                                     barrierDismissible: false,

@@ -220,6 +220,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               collectionNamePath: ['users'],
             )!,
             contractorName: params.getParam('contractorName', ParamType.String) ?? '',
+            orderId: params.getParam('orderId', ParamType.String) ?? '',
           ),
         ),
         FFRoute(

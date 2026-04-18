@@ -288,36 +288,6 @@ class _ContractorProfilePageWidgetState
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: theme.primaryText)),
-                    // Only clients can write reviews
-                    if (!isCurrentUserProvider &&
-                        contractor.reference != currentUserReference)
-                      GestureDetector(
-                        onTap: () => context.pushNamed(
-                          'WriteReviewPage',
-                          queryParameters: {
-                            'contractorId': contractor.uid,
-                            'contractorRef':
-                                serializeParam(widget.contractorRef,
-                                    ParamType.DocumentReference),
-                            'contractorName': contractor.fullName.isNotEmpty
-                                ? contractor.fullName
-                                : contractor.displayName,
-                          },
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: theme.primary,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text('Write a Review',
-                              style: GoogleFonts.ubuntu(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white)),
-                        ),
-                      ),
                   ],
                 ),
                 const SizedBox(height: 14),

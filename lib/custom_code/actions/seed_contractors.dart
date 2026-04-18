@@ -23,7 +23,7 @@ Future<String> seedContractors() async {
       'title': 'Expert Plumber',
       'categories': ['Plumbers'],
       'description':
-          'Specializing in pipe repairs, installations, and all plumbing needs for residential and commercial properties.',
+          'PrimeBuild specializes in residential and commercial plumbing services.\nBrings 8+ years of experience in pipe and fixture work.\nHandles leak repair, drain cleaning, and full plumbing installation.\nUses durable materials and clean installation methods.\nIdeal for urgent plumbing fixes and long-term maintenance.',
     },
     {
       'name': 'Serviq',
@@ -32,7 +32,7 @@ Future<String> seedContractors() async {
       'title': 'Licensed Electrician',
       'categories': ['Electricians'],
       'description':
-          'Certified electrician offering wiring, panel upgrades, and electrical safety inspections.',
+          'Serviq specializes in safe and reliable electrical solutions.\nBrings 9+ years of experience in wiring and panel upgrades.\nHandles lighting, outlets, breakers, and electrical troubleshooting.\nFollows strict safety standards on every project.\nIdeal for homes and businesses needing dependable electrical work.',
     },
     {
       'name': 'Ali Kareem',
@@ -41,7 +41,7 @@ Future<String> seedContractors() async {
       'title': 'Professional Painter',
       'categories': ['Painters'],
       'description':
-          'Skilled painter delivering premium interior and exterior painting with flawless finishes.',
+          'Ali Kareem specializes in interior and exterior painting projects.\nBrings 7+ years of experience in residential and commercial painting.\nHandles wall preparation, repainting, and finishing with precision.\nUses premium paints for smooth and durable results.\nIdeal for modern makeovers and complete color transformations.',
     },
     {
       'name': 'EliteWorks',
@@ -50,7 +50,7 @@ Future<String> seedContractors() async {
       'title': 'Heating & AC Specialist',
       'categories': ['Heating', 'Air Conditioning'],
       'description':
-          'Full-service HVAC expert offering heating and air conditioning installation, repair, and maintenance.',
+          'EliteWorks specializes in heating and air conditioning services.\nBrings 10+ years of experience in HVAC installation and maintenance.\nHandles AC repair, heating diagnostics, and system optimization.\nUses efficient equipment and professional technical practices.\nIdeal for year-round indoor comfort and energy savings.',
     },
     {
       'name': 'SolidHands',
@@ -59,7 +59,7 @@ Future<String> seedContractors() async {
       'title': 'General Contractor',
       'categories': ['Contractors & Handymen'],
       'description':
-          'Reliable contractor for all home repairs, renovations, and handyman tasks.',
+          'SolidHands specializes in construction and renovation projects.\nBrings 8+ years of experience in building and remodeling.\nManages projects from start to finish professionally.\nUses quality materials and skilled workers.\nIdeal for large-scale and complex jobs.',
     },
     {
       'name': 'Omar Farooq',
@@ -68,7 +68,7 @@ Future<String> seedContractors() async {
       'title': 'Electrician',
       'categories': ['Electricians'],
       'description':
-          'Experienced electrician with 10+ years handling residential and commercial electrical systems.',
+          'Omar Farooq specializes in residential and commercial electrical services.\nBrings 10+ years of experience in advanced electrical systems.\nHandles rewiring, load balancing, and panel troubleshooting.\nApplies safe and code-compliant installation standards.\nIdeal for reliable upgrades and long-term electrical performance.',
     },
     {
       'name': 'Ibrahim Saeed',
@@ -77,7 +77,7 @@ Future<String> seedContractors() async {
       'title': 'Plumber',
       'categories': ['Plumbers'],
       'description':
-          'Fast and dependable plumbing services including leak repairs, drain cleaning, and pipe installations.',
+          'Ibrahim Saeed specializes in practical plumbing maintenance services.\nBrings 7+ years of experience in leak and drainage solutions.\nHandles pipe replacement, fixture fitting, and emergency repairs.\nWorks with clean methods and durable plumbing parts.\nIdeal for quick response and affordable plumbing work.',
     },
     {
       'name': 'HandyFlow',
@@ -86,7 +86,7 @@ Future<String> seedContractors() async {
       'title': 'Painting Contractor',
       'categories': ['Painters'],
       'description':
-          'Interior and exterior painting specialist with a keen eye for detail and lasting results.',
+          'HandyFlow specializes in detailed interior and exterior painting.\nBrings 6+ years of experience in finishing and repainting projects.\nHandles wall correction, texture prep, and final coat application.\nUses quality paint systems for durable visual results.\nIdeal for homes needing a clean and fresh new look.',
     },
     {
       'name': 'Hassan Jaber',
@@ -95,7 +95,7 @@ Future<String> seedContractors() async {
       'title': 'Handyman',
       'categories': ['Contractors & Handymen'],
       'description':
-          'Your go-to handyman for all household maintenance, repairs, and improvement projects.',
+          'Hassan Jaber specializes in handyman and home maintenance services.\nBrings 8+ years of experience in repairs and installations.\nHandles fittings, minor renovations, and everyday household fixes.\nWorks efficiently with practical and cost-effective solutions.\nIdeal for fast and dependable home support tasks.',
     },
     {
       'name': 'Workora',
@@ -104,7 +104,7 @@ Future<String> seedContractors() async {
       'title': 'General Contractor & Handyman',
       'categories': ['Contractors & Handymen'],
       'description':
-          'Versatile contractor handling everything from minor fixes to full-scale home renovations.',
+          'Workora specializes in contracting and all-around renovation work.\nBrings 9+ years of experience in property improvement projects.\nHandles repairs, upgrades, and full remodeling execution.\nMaintains structured workflow from planning to handover.\nIdeal for clients needing complete and organized project delivery.',
     },
     {
       'name': 'Tariq Al-Harthy',
@@ -113,7 +113,7 @@ Future<String> seedContractors() async {
       'title': 'Tree Services Specialist',
       'categories': ['Tree Services'],
       'description':
-          'Expert tree trimming, pruning, and removal. Keeping your property safe and looking its best.',
+          'Tariq Al-Harthy specializes in tree care and landscape safety services.\nBrings 8+ years of experience in pruning and tree removal.\nHandles shaping, trimming, and risk-control maintenance work.\nUses safe cutting methods and professional field tools.\nIdeal for healthy trees and secure outdoor environments.',
     },
     {
       'name': 'FixHub',
@@ -122,7 +122,7 @@ Future<String> seedContractors() async {
       'title': 'Electrician & Handyman',
       'categories': ['Electricians', 'Contractors & Handymen'],
       'description':
-          'Multi-skilled professional providing electrical repairs and handyman services for homes and businesses.',
+          'FixHub specializes in electrical and handyman service solutions.\nBrings 8+ years of experience in maintenance and repair work.\nHandles wiring, lighting setup, and small property fixes.\nApplies safe methods with efficient task completion.\nIdeal for quick home and business maintenance needs.',
     },
     {
       'name': 'MasterCrew',
@@ -131,7 +131,7 @@ Future<String> seedContractors() async {
       'title': 'Professional Mover',
       'categories': ['Movers'],
       'description':
-          'Reliable moving crew for residential and commercial relocations, handled with care and efficiency.',
+          'MasterCrew specializes in residential and office moving services.\nBrings 9+ years of experience in relocation operations.\nHandles packing, transport, loading, and safe item placement.\nUses organized workflow and protective handling standards.\nIdeal for smooth and stress-free moving projects.',
     },
     {
       'name': 'Bilal Ahmad',
@@ -140,7 +140,7 @@ Future<String> seedContractors() async {
       'title': 'HVAC Technician',
       'categories': ['Air Conditioning', 'Heating'],
       'description':
-          'Skilled technician specializing in air conditioning and heating system installation, servicing, and repair.',
+          'Bilal Ahmad specializes in air conditioning and heating systems.\nBrings 10+ years of experience in HVAC servicing and repair.\nHandles installation, diagnostics, and preventive maintenance.\nUses accurate testing tools for efficient system performance.\nIdeal for reliable climate control in all seasons.',
     },
     {
       'name': 'Adnan Malik',
@@ -149,7 +149,7 @@ Future<String> seedContractors() async {
       'title': 'Locksmith',
       'categories': ['Locksmiths'],
       'description':
-          'Available 24/7 for lock installations, key cutting, and emergency lockout services.',
+          'Adnan Malik specializes in locksmith and access security services.\nBrings 9+ years of experience in lock systems and key work.\nHandles lock installation, replacement, and emergency lockout support.\nUses precise fitting methods for strong and reliable security.\nIdeal for homes and businesses requiring secure entry solutions.',
     },
     {
       'name': 'Fixora',
@@ -158,7 +158,7 @@ Future<String> seedContractors() async {
       'title': 'AC & Heating Technician',
       'categories': ['Air Conditioning', 'Heating'],
       'description':
-          'Expert in cooling and heating solutions. Fast diagnosis and reliable repairs for all HVAC systems.',
+          'Fixora specializes in complete AC and heating system care.\nBrings 8+ years of experience in HVAC troubleshooting and repair.\nHandles diagnostics, installation, and performance upgrades.\nUses efficient practices to improve comfort and energy usage.\nIdeal for dependable residential and commercial HVAC support.',
     },
     {
       'name': 'Rami Haddad',
@@ -167,7 +167,7 @@ Future<String> seedContractors() async {
       'title': 'Locksmith',
       'categories': ['Locksmiths'],
       'description':
-          'Trusted locksmith providing security upgrades, lock replacements, and smart lock installations.',
+          'Rami Haddad specializes in locksmith and security upgrade services.\nBrings 7+ years of experience in lock replacement and smart locks.\nHandles key duplication, lock repair, and access control setup.\nUses modern hardware with accurate installation methods.\nIdeal for secure and practical property protection needs.',
     },
     {
       'name': 'HandyFlow Pro',
@@ -176,7 +176,7 @@ Future<String> seedContractors() async {
       'title': 'Moving & Relocation Expert',
       'categories': ['Movers'],
       'description':
-          'Full-service moving company offering packing, transport, and unpacking for stress-free moves.',
+          'HandyFlow Pro specializes in full-service moving and relocation.\nBrings 10+ years of experience in coordinated transport operations.\nHandles packing, loading, delivery, and unpacking assistance.\nUses trained crews and protective methods for valuables.\nIdeal for complete relocation with minimal downtime.',
     },
     {
       'name': 'Sami Zidan',
@@ -185,7 +185,7 @@ Future<String> seedContractors() async {
       'title': 'Tree Care Professional',
       'categories': ['Tree Services'],
       'description':
-          'Certified arborist offering tree pruning, removal, stump grinding, and landscape maintenance.',
+          'Sami Zidan specializes in professional tree care services.\nBrings 9+ years of experience in pruning and removal operations.\nHandles stump work, tree shaping, and maintenance planning.\nUses safe equipment and controlled cutting techniques.\nIdeal for clean, healthy, and safe outdoor landscapes.',
     },
     {
       'name': 'TaskMatch',
@@ -194,7 +194,7 @@ Future<String> seedContractors() async {
       'title': 'Moving Coordinator',
       'categories': ['Movers'],
       'description':
-          'Professional moving service for local and long-distance relocations with careful handling.',
+          'TaskMatch specializes in organized moving and relocation coordination.\nBrings 8+ years of experience in local and distance moves.\nHandles planning, transport scheduling, and move-day logistics.\nUses structured processes for timely and safe delivery.\nIdeal for homes and companies needing reliable move management.',
     },
   ];
 

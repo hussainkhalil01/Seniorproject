@@ -67,6 +67,9 @@ SERVICE CATEGORIES (use exact strings for the function):
 - Plumbing
 - General Construction & Renovation
 - Interior Finishing
+- Tree Services
+- Movers
+- Locksmiths
 ''';
 
   static const _tools = [
@@ -88,6 +91,9 @@ SERVICE CATEGORIES (use exact strings for the function):
                 'Plumbing',
                 'General Construction & Renovation',
                 'Interior Finishing',
+                'Tree Services',
+                'Movers',
+                'Locksmiths',
               ],
               'description':
                   'The service category. Omit to search all categories.',
