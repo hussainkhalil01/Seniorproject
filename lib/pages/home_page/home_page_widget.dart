@@ -37,6 +37,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   bool _notificationsEnabled = true;
   Position? _userPosition;
   _HomeSort _sort = _HomeSort.none;
+  String _searchQuery = '';
 
   static const _kNotifKey = 'push_notifications';
 
@@ -240,6 +241,8 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                             child: TextFormField(
                               controller: _model.textController,
                               focusNode: _model.textFieldFocusNode,
+                              onChanged: (val) =>
+                                  setState(() => _searchQuery = val.trim().toLowerCase()),
                               decoration: InputDecoration(
                                 hintText: 'Search services...',
                                 hintStyle: FlutterFlowTheme.of(context)
@@ -274,7 +277,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                         ),
                         const SizedBox(width: 12),
                         GestureDetector(
-                          onTap: () {},
+                          onTap: () {
+                            final isDark = Theme.of(context).brightness ==
+                                Brightness.dark;
+                            setDarkModeSetting(
+                              context,
+                              isDark ? ThemeMode.light : ThemeMode.dark,
+                            );
+                          },
                           child: Container(
                             width: 50,
                             height: 50,
@@ -282,8 +292,10 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                               color: FlutterFlowTheme.of(context).primary,
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(
-                              Icons.tune_rounded,
+                            child: Icon(
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Icons.light_mode_rounded
+                                  : Icons.dark_mode_rounded,
                               color: Colors.white,
                               size: 22,
                             ),
@@ -589,7 +601,12 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           ),
                         );
                       }
-                      final contractors = snapshot.data!;
+                      final contractors = snapshot.data!
+                          .where((c) => _searchQuery.isEmpty ||
+                              c.displayName
+                                  .toLowerCase()
+                                  .contains(_searchQuery))
+                          .toList();
                       // Apply sort
                       final sorted = List<UsersRecord>.from(contractors);
                       if (_sort == _HomeSort.nearest && _userPosition != null) {

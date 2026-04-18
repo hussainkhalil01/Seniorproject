@@ -130,6 +130,8 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
   late ChatsPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -163,7 +165,7 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
   @override
   void dispose() {
     _model.dispose();
-
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -584,25 +586,36 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                     decoration: BoxDecoration(
                       color: FlutterFlowTheme.of(context).secondaryBackground,
                       borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: FlutterFlowTheme.of(context).alternate,
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(left: 14, right: 8),
-                          child: Icon(Icons.search_rounded,
-                              color: Color(0xFF9AA5B4), size: 20),
+                    child: TextFormField(
+                      controller: _searchController,
+                      onChanged: (val) =>
+                          setState(() => _searchQuery = val.trim().toLowerCase()),
+                      decoration: InputDecoration(
+                        hintText: 'Search...',
+                        hintStyle: FlutterFlowTheme.of(context)
+                            .bodyMedium
+                            .override(
+                              font: GoogleFonts.ubuntu(),
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                              letterSpacing: 0,
+                            ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 13),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                          size: 20,
                         ),
-                        Text(
-                          'Search...',
-                          style: FlutterFlowTheme.of(context)
-                              .bodyMedium
-                              .override(
-                                font: GoogleFonts.ubuntu(),
-                                color: const Color(0xFF9AA5B4),
-                                letterSpacing: 0,
-                              ),
-                        ),
-                      ],
+                      ),
+                      style: FlutterFlowTheme.of(context).bodyMedium.override(
+                            font: GoogleFonts.ubuntu(),
+                            letterSpacing: 0,
+                          ),
                     ),
                   ),
                 ),
@@ -626,7 +639,13 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                           .where((c) =>
                               (currentUserReference == c.userA ||
                               currentUserReference == c.userB) &&
-                              !c.deletedBy.contains(currentUserUid))
+                              !c.deletedBy.contains(currentUserUid) &&
+                              (_searchQuery.isEmpty ||
+                                  (currentUserReference == c.userA
+                                          ? c.userBName
+                                          : c.userAName)
+                                      .toLowerCase()
+                                      .contains(_searchQuery)))
                           .toList();
 
                       if (chats.isEmpty) {
