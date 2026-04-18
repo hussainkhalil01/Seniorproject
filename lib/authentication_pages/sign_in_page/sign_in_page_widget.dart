@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import 'dart:async';
 import 'dart:ui';
 import '/custom_code/actions/index.dart' as actions;
 import '/index.dart';
@@ -23,6 +24,7 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
   late SignInPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  Timer? _lockoutTimer;
 
   @override
   void initState() {
@@ -34,13 +36,26 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
 
     _model.signInPasswordFieldTextController ??= TextEditingController();
     _model.signInPasswordFieldFocusNode ??= FocusNode();
+
+    // Resume countdown if a lockout was already active before navigation
+    if (_model.isLockedOut) _startLockoutTimer();
   }
 
   @override
   void dispose() {
+    _lockoutTimer?.cancel();
     _model.dispose();
-
     super.dispose();
+  }
+
+  void _startLockoutTimer() {
+    _lockoutTimer?.cancel();
+    _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!_model.isLockedOut) {
+        _lockoutTimer?.cancel();
+      }
+      if (mounted) safeSetState(() {});
+    });
   }
 
   @override
@@ -370,12 +385,79 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                               ),
                             ),
                             const SizedBox(height: 24),
+
+                            // Lockout banner
+                            if (_model.isLockedOut) ...[
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 12),
+                                margin:
+                                    const EdgeInsets.only(bottom: 14),
+                                decoration: BoxDecoration(
+                                  color: FlutterFlowTheme.of(context)
+                                      .error
+                                      .withValues(alpha: 0.1),
+                                  borderRadius:
+                                      BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: FlutterFlowTheme.of(context)
+                                        .error
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.lock_clock_rounded,
+                                        color:
+                                            FlutterFlowTheme.of(context)
+                                                .error,
+                                        size: 20),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: RichText(
+                                        text: TextSpan(
+                                          style: GoogleFonts.ubuntu(
+                                            fontSize: 13,
+                                            color: FlutterFlowTheme.of(
+                                                    context)
+                                                .primaryText,
+                                            height: 1.4,
+                                          ),
+                                          children: [
+                                            const TextSpan(
+                                                text:
+                                                    'Too many failed attempts. Try again in '),
+                                            TextSpan(
+                                              text: _model
+                                                  .lockoutCountdown,
+                                              style: GoogleFonts.ubuntu(
+                                                fontWeight:
+                                                    FontWeight.bold,
+                                                color:
+                                                    FlutterFlowTheme.of(
+                                                            context)
+                                                        .error,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+
                             // Sign In button
                             SizedBox(
                               width: double.infinity,
                               height: 52,
                               child: ElevatedButton(
-                                onPressed: _model.isLoading ? null : () async {
+                                onPressed: (_model.isLoading ||
+                                        _model.isLockedOut)
+                                    ? null
+                                    : () async {
                                   _model.signInEmailFieldTextController
                                           .text =
                                       _model
@@ -408,7 +490,13 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                                         .text,
                                   );
                                   if (_model.signInResult == 'success') {
+                                    _model.resetAttempts();
                                     return;
+                                  }
+
+                                  _model.recordFailedAttempt();
+                                  if (_model.isLockedOut) {
+                                    _startLockoutTimer();
                                   }
 
                                   safeSetState(
@@ -417,7 +505,9 @@ class _SignInPageWidgetState extends State<SignInPageWidget> {
                                   messenger.showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        _model.signInResult!,
+                                        _model.isLockedOut
+                                            ? 'Too many failed attempts. Please wait 2 minutes.'
+                                            : '${_model.signInResult!} (${3 - _model.failedAttempts} attempt${3 - _model.failedAttempts == 1 ? '' : 's'} left)',
                                         style: GoogleFonts.ubuntu(
                                           color: Colors.white,
                                           fontSize: 15.0,

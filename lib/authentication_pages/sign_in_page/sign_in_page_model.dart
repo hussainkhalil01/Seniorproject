@@ -48,6 +48,43 @@ class SignInPageModel extends FlutterFlowModel<SignInPageWidget> {
   // Whether sign-in is in progress.
   bool isLoading = false;
 
+  // ── Lockout state (static so it survives navigation) ──────
+  static const int _maxAttempts = 3;
+  static const Duration _lockoutDuration = Duration(minutes: 2);
+
+  static int _failedAttempts = 0;
+  static DateTime? _lockedUntil;
+
+  int get failedAttempts => _failedAttempts;
+  bool get isLockedOut =>
+      _lockedUntil != null && DateTime.now().isBefore(_lockedUntil!);
+
+  Duration get lockoutRemaining {
+    if (_lockedUntil == null) return Duration.zero;
+    final remaining = _lockedUntil!.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  String get lockoutCountdown {
+    final r = lockoutRemaining;
+    final m = r.inMinutes.toString().padLeft(2, '0');
+    final s = (r.inSeconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  void recordFailedAttempt() {
+    _failedAttempts++;
+    if (_failedAttempts >= _maxAttempts) {
+      _lockedUntil = DateTime.now().add(_lockoutDuration);
+      _failedAttempts = 0;
+    }
+  }
+
+  void resetAttempts() {
+    _failedAttempts = 0;
+    _lockedUntil = null;
+  }
+
   @override
   void initState(BuildContext context) {
     columnController = ScrollController();
