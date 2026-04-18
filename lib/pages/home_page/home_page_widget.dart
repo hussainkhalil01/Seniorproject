@@ -1,4 +1,5 @@
-﻿import 'dart:math' as math;
+﻿import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
@@ -38,6 +39,8 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   Position? _userPosition;
   _HomeSort _sort = _HomeSort.none;
   String _searchQuery = '';
+  Timer? _searchDebounce;
+  final Map<String, double> _distCache = {};
 
   static const _kNotifKey = 'push_notifications';
 
@@ -54,7 +57,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       final pos = await Geolocator.getCurrentPosition(
           locationSettings:
               const LocationSettings(accuracy: LocationAccuracy.low));
-      if (mounted) setState(() => _userPosition = pos);
+      if (mounted) setState(() { _userPosition = pos; _distCache.clear(); });
     } catch (_) {}
   }
 
@@ -134,6 +137,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _model.dispose();
     super.dispose();
   }
@@ -241,8 +245,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                             child: TextFormField(
                               controller: _model.textController,
                               focusNode: _model.textFieldFocusNode,
-                              onChanged: (val) =>
-                                  setState(() => _searchQuery = val.trim().toLowerCase()),
+                              onChanged: (val) {
+                                _searchDebounce?.cancel();
+                                _searchDebounce = Timer(
+                                  const Duration(milliseconds: 300),
+                                  () => setState(() => _searchQuery = val.trim().toLowerCase()),
+                                );
+                              },
                               decoration: InputDecoration(
                                 hintText: 'Search services...',
                                 hintStyle: FlutterFlowTheme.of(context)
@@ -586,7 +595,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           q = q.where('categories',
                               arrayContains: FFAppState().selectedCategory);
                         }
-                        return q.orderBy('created_time', descending: true);
+                        return q;
                       },
                     ),
                     builder: (context, snapshot) {
@@ -603,24 +612,33 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       }
                       final contractors = snapshot.data!
                           .where((c) => _searchQuery.isEmpty ||
-                              c.displayName
-                                  .toLowerCase()
-                                  .contains(_searchQuery))
+                              c.fullName.toLowerCase().contains(_searchQuery) ||
+                              c.displayName.toLowerCase().contains(_searchQuery))
                           .toList();
-                      // Apply sort
+                      // Apply sort — default: newest first (null created_time goes last)
                       final sorted = List<UsersRecord>.from(contractors);
-                      if (_sort == _HomeSort.nearest && _userPosition != null) {
+                      if (_sort == _HomeSort.none) {
                         sorted.sort((a, b) {
-                          final da = _distKm(
-                              _userPosition!.latitude,
-                              _userPosition!.longitude,
-                              a.latitude,
-                              a.longitude);
-                          final db = _distKm(
-                              _userPosition!.latitude,
-                              _userPosition!.longitude,
-                              b.latitude,
-                              b.longitude);
+                          final ta = a.createdTime;
+                          final tb = b.createdTime;
+                          if (ta == null && tb == null) return 0;
+                          if (ta == null) return 1;
+                          if (tb == null) return -1;
+                          return tb.compareTo(ta);
+                        });
+                      }
+                      if (_sort == _HomeSort.nearest && _userPosition != null) {
+                        final lat = _userPosition!.latitude;
+                        final lng = _userPosition!.longitude;
+                        sorted.sort((a, b) {
+                          final da = _distCache.putIfAbsent(
+                            a.reference.id,
+                            () => _distKm(lat, lng, a.latitude, a.longitude),
+                          );
+                          final db = _distCache.putIfAbsent(
+                            b.reference.id,
+                            () => _distKm(lat, lng, b.latitude, b.longitude),
+                          );
                           return da.compareTo(db);
                         });
                       } else if (_sort == _HomeSort.highestRated) {
@@ -657,19 +675,21 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           ),
                         );
                       }
-                      return Padding(
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                        child: Column(
-                          children: sorted.map((contractor) {
-                            final isMe =
-                                contractor.reference == currentUserReference;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _buildContractorCard(
-                                  context, contractor, isMe),
-                            );
-                          }).toList(),
-                        ),
+                        itemCount: sorted.length,
+                        itemBuilder: (context, i) {
+                          final contractor = sorted[i];
+                          final isMe =
+                              contractor.reference == currentUserReference;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildContractorCard(
+                                context, contractor, isMe),
+                          );
+                        },
                       );
                     },
                   ),

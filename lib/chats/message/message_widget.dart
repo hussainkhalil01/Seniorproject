@@ -20,6 +20,7 @@ import '/backend/stripe_config.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'message_model.dart';
 export 'message_model.dart';
@@ -1292,14 +1293,19 @@ class _MessageWidgetState extends State<MessageWidget> {
       }
 
       // It's an image — render the photo
-      final imageFile = File(message.image);
+      final isLocalFile = message.image.startsWith('/') ||
+          message.image.startsWith('file://');
       return ClipRRect(
         borderRadius: BorderRadius.circular(10.0),
-        child: imageFile.existsSync()
-            ? Image.file(imageFile,
+        child: isLocalFile
+            ? Image.file(File(message.image),
                 width: 200.0, height: 200.0, fit: BoxFit.cover)
-            : Image.network(message.image,
-                width: 200.0, height: 200.0, fit: BoxFit.cover),
+            : CachedNetworkImage(
+                imageUrl: message.image,
+                width: 200.0,
+                height: 200.0,
+                fit: BoxFit.cover,
+              ),
       );
     }
 
@@ -1521,8 +1527,8 @@ class _MessageWidgetState extends State<MessageWidget> {
               ),
               actions: [
                 IconButton(
-                  onPressed: () {
-                    showDialog(
+                  onPressed: () async {
+                    final seconds = await showDialog<int>(
                       context: context,
                       barrierDismissible: false,
                       builder: (_) => _CallingDialog(
@@ -1530,6 +1536,34 @@ class _MessageWidgetState extends State<MessageWidget> {
                         photoUrl: otherPhoto,
                       ),
                     );
+                    if (!context.mounted) return;
+                    // seconds == null means dialog dismissed without ending
+                    // seconds == -1 means call never connected (hung up during ringing)
+                    final connected = seconds != null && seconds >= 0;
+                    final m = connected
+                        ? (seconds ~/ 60).toString().padLeft(2, '0')
+                        : '00';
+                    final s = connected
+                        ? (seconds % 60).toString().padLeft(2, '0')
+                        : '00';
+                    final callText = connected
+                        ? '📞 Call ended • $m:$s'
+                        : '📞 Missed call';
+                    await ChatMessagesRecord.collection.doc().set(
+                        createChatMessagesRecordData(
+                          user: currentUserReference,
+                          chat: widget.chatRef,
+                          text: callText,
+                          timestamp: getCurrentTimestamp,
+                          isRead: false,
+                        ));
+                    final chatUpdate = createChatsRecordData(
+                      lastMessageTime: getCurrentTimestamp,
+                      lastMessageSentBy: currentUserReference,
+                      lastMessage: callText,
+                    );
+                    chatUpdate['last_message_seen_by'] = [currentUserReference];
+                    await widget.chatRef?.update(chatUpdate);
                   },
                   icon: Icon(
                     Icons.phone_outlined,
@@ -1591,6 +1625,7 @@ class _MessageWidgetState extends State<MessageWidget> {
                       queryBuilder: (chatMessagesRecord) => chatMessagesRecord
                           .where('chat', isEqualTo: widget.chatRef)
                           .orderBy('timestamp', descending: true),
+                      limit: 50,
                     ),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
@@ -1651,7 +1686,7 @@ class _MessageWidgetState extends State<MessageWidget> {
                                   CircleAvatar(
                                     radius: 14.0,
                                     backgroundImage: otherPhoto.isNotEmpty
-                                        ? NetworkImage(otherPhoto)
+                                        ? CachedNetworkImageProvider(otherPhoto)
                                         : null,
                                     backgroundColor:
                                         FlutterFlowTheme.of(context).accent1,
@@ -1867,14 +1902,13 @@ class _CallingDialog extends StatefulWidget {
 }
 
 class _CallingDialogState extends State<_CallingDialog> {
-  late final Timer _timer;
+  Timer? _timer;
   int _seconds = 0;
   bool _callStarted = false;
 
   @override
   void initState() {
     super.initState();
-    // Simulate ringing for 3 seconds then connect
     Future.delayed(const Duration(seconds: 3), () {
       if (!mounted) return;
       setState(() => _callStarted = true);
@@ -1887,7 +1921,7 @@ class _CallingDialogState extends State<_CallingDialog> {
 
   @override
   void dispose() {
-    if (_callStarted) _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -1896,6 +1930,12 @@ class _CallingDialogState extends State<_CallingDialog> {
     final m = (_seconds ~/ 60).toString().padLeft(2, '0');
     final s = (_seconds % 60).toString().padLeft(2, '0');
     return '$m:$s';
+  }
+
+  void _endCall() {
+    _timer?.cancel();
+    // Return seconds=-1 if call never connected (still ringing)
+    Navigator.of(context).pop(_callStarted ? _seconds : -1);
   }
 
   @override
@@ -1912,7 +1952,6 @@ class _CallingDialogState extends State<_CallingDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Avatar
             CircleAvatar(
               radius: 46,
               backgroundImage: widget.photoUrl.isNotEmpty
@@ -1926,7 +1965,6 @@ class _CallingDialogState extends State<_CallingDialog> {
                   : null,
             ),
             const SizedBox(height: 16),
-            // Name
             Text(
               widget.name,
               style: const TextStyle(
@@ -1936,7 +1974,6 @@ class _CallingDialogState extends State<_CallingDialog> {
               ),
             ),
             const SizedBox(height: 8),
-            // Status / timer
             Text(
               _timeLabel,
               style: TextStyle(
@@ -1945,9 +1982,8 @@ class _CallingDialogState extends State<_CallingDialog> {
               ),
             ),
             const SizedBox(height: 36),
-            // End call button
             GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: _endCall,
               child: Container(
                 width: 64,
                 height: 64,

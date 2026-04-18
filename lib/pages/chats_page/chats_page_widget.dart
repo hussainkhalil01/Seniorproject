@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chats_page_model.dart';
 export 'chats_page_model.dart';
@@ -132,6 +133,7 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  final Map<String, String> _titleCache = {};
 
   @override
   void initState() {
@@ -691,6 +693,7 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                         );
                       }
 
+                      final now = DateTime.now();
                       return ListView.builder(
                         controller: _model.columnController,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -713,17 +716,17 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                           final chat = chats[index - 2];
                           final isUserA =
                               currentUserReference == chat.userA;
-                          final otherRef =
-                              isUserA ? chat.userB : chat.userA;
                           final otherName =
                               isUserA ? chat.userBName : chat.userAName;
 
+                          final otherRef =
+                              isUserA ? chat.userB : chat.userA;
+                          final otherRefId = otherRef?.id ?? '';
                           final isUnread =
                               chat.lastMessageSentBy != currentUserReference &&
                               !chat.lastMessageSeenBy
                                   .contains(currentUserReference);
                           final msgTime = chat.lastMessageTime;
-                          final now = DateTime.now();
                           String timeStr;
                           if (msgTime == null) {
                             timeStr = '';
@@ -778,211 +781,183 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                                 ],
                               ),
                             ),
-                            child: StreamBuilder<UsersRecord>(
-                            stream: otherRef != null
-                                ? UsersRecord.getDocument(otherRef)
-                                : const Stream.empty(),
-                            builder: (context, userSnap) {
-                              final otherTitle =
-                                  userSnap.data?.title ?? '';
-                              final livePhoto = userSnap.data?.photoUrl ?? '';
-
-                              return InkWell(
-                                splashColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: () => context.pushNamed(
-                                  MessageWidget.routeName,
-                                  queryParameters: {
-                                    'chatRef': serializeParam(
-                                      chat.reference,
-                                      ParamType.DocumentReference,
-                                    ),
-                                  }.withoutNulls,
-                                ),
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      // Avatar
-                                      Container(
-                                        width: 54,
-                                        height: 54,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: FlutterFlowTheme.of(context)
-                                                .alternate,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: ClipOval(
-                                          child: livePhoto.isNotEmpty
-                                              ? Image.network(livePhoto,
-                                                  width: 54,
-                                                  height: 54,
-                                                  fit: BoxFit.cover)
-                                              : Container(
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .accent1,
-                                                  child: Icon(
-                                                    Icons.person_rounded,
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .primary,
-                                                    size: 26,
-                                                  ),
-                                                ),
+                            child: InkWell(
+                              splashColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              onTap: () => context.pushNamed(
+                                MessageWidget.routeName,
+                                queryParameters: {
+                                  'chatRef': serializeParam(
+                                    chat.reference,
+                                    ParamType.DocumentReference,
+                                  ),
+                                }.withoutNulls,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    // Avatar — use cached photo from ChatsRecord
+                                    Container(
+                                      width: 54,
+                                      height: 54,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: FlutterFlowTheme.of(context).alternate,
+                                          width: 1,
                                         ),
                                       ),
-                                      const SizedBox(width: 14),
-                                      // Text content
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            // Name + time row
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    otherName,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyLarge
-                                                            .override(
-                                                              font: GoogleFonts
-                                                                  .ubuntu(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w600),
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              letterSpacing: 0,
-                                                            ),
+                                      child: ClipOval(
+                                        child: (() {
+                                          final photo = isUserA ? chat.userBPhoto : chat.userAPhoto;
+                                          return photo.isNotEmpty
+                                              ? CachedNetworkImage(
+                                                  imageUrl: photo,
+                                                  width: 54,
+                                                  height: 54,
+                                                  fit: BoxFit.cover,
+                                                  errorWidget: (_, __, ___) => Container(
+                                                    color: FlutterFlowTheme.of(context).accent1,
+                                                    child: Icon(Icons.person_rounded,
+                                                        color: FlutterFlowTheme.of(context).primary,
+                                                        size: 26),
                                                   ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  timeStr,
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodySmall
+                                                )
+                                              : Container(
+                                                  color: FlutterFlowTheme.of(context).accent1,
+                                                  child: Icon(Icons.person_rounded,
+                                                      color: FlutterFlowTheme.of(context).primary,
+                                                      size: 26),
+                                                );
+                                        })(),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    // Text content
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Name + time row
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  otherName,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: FlutterFlowTheme.of(context)
+                                                      .bodyLarge
                                                       .override(
-                                                        font:
-                                                            GoogleFonts.ubuntu(),
-                                                        color: FlutterFlowTheme
-                                                                .of(context)
-                                                            .secondaryText,
-                                                        fontSize: 12,
+                                                        font: GoogleFonts.ubuntu(
+                                                            fontWeight: FontWeight.w600),
+                                                        fontWeight: FontWeight.w600,
                                                         letterSpacing: 0,
                                                       ),
                                                 ),
-                                              ],
-                                            ),
-                                            // Title (profession)
-                                            if (otherTitle.isNotEmpty) ...[
-                                              const SizedBox(height: 2),
+                                              ),
+                                              const SizedBox(width: 8),
                                               Text(
-                                                otherTitle,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: FlutterFlowTheme.of(
-                                                        context)
+                                                timeStr,
+                                                style: FlutterFlowTheme.of(context)
                                                     .bodySmall
                                                     .override(
-                                                      font: GoogleFonts.ubuntu(
-                                                          fontWeight:
-                                                              FontWeight.w500),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .primary,
+                                                      font: GoogleFonts.ubuntu(),
+                                                      color: FlutterFlowTheme.of(context).secondaryText,
                                                       fontSize: 12,
                                                       letterSpacing: 0,
                                                     ),
                                               ),
                                             ],
-                                            const SizedBox(height: 4),
-                                            // Last message + unread badge
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    chat.lastMessage,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodySmall
-                                                            .override(
-                                                              font: GoogleFonts
-                                                                  .ubuntu(
-                                                                      fontWeight:
-                                                                          isUnread
-                                                                              ? FontWeight.w500
-                                                                              : FontWeight.normal),
-                                                              color: isUnread
-                                                                  ? FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .primaryText
-                                                                  : FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .secondaryText,
-                                                              fontSize: 13,
-                                                              letterSpacing: 0,
-                                                            ),
-                                                  ),
+                                          ),
+                                          // Profession title (fetched once, cached)
+                                          FutureBuilder<String>(
+                                            future: _titleCache.containsKey(otherRefId)
+                                                ? Future.value(_titleCache[otherRefId]!)
+                                                : (otherRef != null
+                                                    ? UsersRecord.getDocumentOnce(otherRef)
+                                                        .then((u) {
+                                                          _titleCache[otherRefId] = u.title;
+                                                          return u.title;
+                                                        })
+                                                    : Future.value('')),
+                                            builder: (context, snap) {
+                                              final title = snap.data ?? '';
+                                              if (title.isEmpty) return const SizedBox.shrink();
+                                              return Padding(
+                                                padding: const EdgeInsets.only(top: 2),
+                                                child: Text(
+                                                  title,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: FlutterFlowTheme.of(context)
+                                                      .bodySmall
+                                                      .override(
+                                                        font: GoogleFonts.ubuntu(
+                                                            fontWeight: FontWeight.w500),
+                                                        color: FlutterFlowTheme.of(context).primary,
+                                                        fontSize: 12,
+                                                        letterSpacing: 0,
+                                                      ),
                                                 ),
-                                                if (isUnread)
-                                                  Container(
-                                                    width: 20,
-                                                    height: 20,
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .primary,
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: const Center(
-                                                      child: Text(
-                                                        '1',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(height: 4),
+                                          // Last message + unread badge
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  chat.lastMessage,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: FlutterFlowTheme.of(context)
+                                                      .bodySmall
+                                                      .override(
+                                                        font: GoogleFonts.ubuntu(
+                                                            fontWeight: isUnread
+                                                                ? FontWeight.w500
+                                                                : FontWeight.normal),
+                                                        color: isUnread
+                                                            ? FlutterFlowTheme.of(context).primaryText
+                                                            : FlutterFlowTheme.of(context).secondaryText,
+                                                        fontSize: 13,
+                                                        letterSpacing: 0,
+                                                      ),
+                                                ),
+                                              ),
+                                              if (isUnread)
+                                                Container(
+                                                  width: 20,
+                                                  height: 20,
+                                                  decoration: BoxDecoration(
+                                                    color: FlutterFlowTheme.of(context).primary,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: const Center(
+                                                    child: Text(
+                                                      '1',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.w600,
                                                       ),
                                                     ),
                                                   ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
+                                                ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            ),
                           );
                         },
                       );
