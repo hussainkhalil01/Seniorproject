@@ -698,8 +698,7 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                               isUserA ? chat.userB : chat.userA;
                           final otherName =
                               isUserA ? chat.userBName : chat.userAName;
-                          final otherPhoto =
-                              isUserA ? chat.userBPhoto : chat.userAPhoto;
+
                           final isUnread =
                               chat.lastMessageSentBy != currentUserReference &&
                               !chat.lastMessageSeenBy
@@ -767,6 +766,7 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                             builder: (context, userSnap) {
                               final otherTitle =
                                   userSnap.data?.title ?? '';
+                              final livePhoto = userSnap.data?.photoUrl ?? '';
 
                               return InkWell(
                                 splashColor: Colors.transparent,
@@ -800,8 +800,8 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                                           ),
                                         ),
                                         child: ClipOval(
-                                          child: otherPhoto.isNotEmpty
-                                              ? Image.network(otherPhoto,
+                                          child: livePhoto.isNotEmpty
+                                              ? Image.network(livePhoto,
                                                   width: 54,
                                                   height: 54,
                                                   fit: BoxFit.cover)
