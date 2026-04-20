@@ -15,11 +15,7 @@ Future<String> signUpWithCustomError(
   String fullName,
   String email,
   String password,
-  String confirmPassword,
 ) async {
-  if (password != confirmPassword) {
-    return 'Passwords do not match. Please try again';
-  }
   try {
     GoRouter.of(context).prepareAuthEvent();
     final userCredential =

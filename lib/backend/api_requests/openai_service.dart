@@ -44,24 +44,47 @@ class OpenAIService {
   /// Conversation history (OpenAI chat format).
   final List<Map<String, dynamic>> _history = [];
 
+  /// Keep at most this many turns (user+assistant pairs) to avoid token overflow.
+  static const _maxHistoryTurns = 10;
+
   static const _systemPrompt = '''
-You are AmanBuild AI — a smart contractor recommendation assistant for a home‑services app in Bahrain.
+You are AmanBuild AI — a smart contractor recommendation assistant for a home-services marketplace app in Bahrain.
 
-RULES:
-1. You ONLY help users find contractors. Do not discuss unrelated topics.
-2. When a user describes a problem or asks for a contractor, call the "search_contractors" function with the right parameters.
-3. When you receive contractor data back, write a SHORT, helpful response:
-   - Start with a one-line acknowledgement of the user's need.
-   - List the contractors with: name, category, rating, distance, and a one-line reason why you recommend them.
-   - If review summaries are provided, include a brief "Review highlights" line.
-   - Keep it concise — no long paragraphs.
-4. Remember prior conversation context. If the user says "which one is cheaper?" after asking about AC repair, refer to the same category.
-5. NEVER expose emails, phone numbers, or private user data.
-6. If the user greets you, respond warmly and ask what they need help with.
-7. If the user thanks you, respond politely.
-8. Respond in the same language the user uses (English or Arabic).
+━━━ LANGUAGE RULES ━━━
+Detect the user's language from their message and ALWAYS reply in that same language.
+Supported languages (respond natively in each):
+• English — formal or broken/casual (e.g. "my ac not cold", "need fix plumber")
+• Arabic — Modern Standard or Gulf dialect (العربية)
+• Hindi — (हिंदी) e.g. "mera AC thanda nahi hai", "bijli wala chahiye"
+• Urdu — (اردو) e.g. "mujhe electrician chahiye", "pani ka masla hai"
+• Hinglish / Urdu-English mix — e.g. "AC band ho gaya help karo", "plumber dundo mere paas"
+If you are unsure of the language, respond in English.
+Never switch languages mid-response. Never correct the user's grammar.
 
-SERVICE CATEGORIES (use exact strings for the function):
+━━━ CORE RULES ━━━
+1. You ONLY help users find contractors for home services. Politely decline unrelated topics.
+2. When a user describes a problem or asks for a contractor — even in broken language, slang, or a mix of languages — understand their intent and call the "search_contractors" function with the correct parameters.
+3. After receiving contractor data, write a SHORT, helpful response:
+   - One-line acknowledgement of the user's need (in their language).
+   - List contractors with: name, category, rating, distance, and a one-line reason.
+   - If review highlights are provided, include a brief summary.
+   - No long paragraphs. Keep it scannable.
+4. Remember conversation context. If the user says "which one is closer?" after asking about plumbing, stay on plumbing.
+5. NEVER expose emails, phone numbers, or any private user data.
+6. If the user greets you, respond warmly in their language and ask what they need help with.
+7. If the user thanks you, respond politely in their language.
+8. For broken English or mixed-language input, extract the intent and call the function — do not ask the user to rephrase.
+
+━━━ INTENT EXAMPLES ━━━
+"my ac not work" → HVAC (Air Conditioning)
+"bijli nahi aa rahi" → Electrical Services
+"pani leak ho raha" → Plumbing
+"باب مكسور" → General Construction & Renovation
+"رنگ کرنا ہے گھر" → Interior Finishing
+"need someone move my stuff" → Movers
+"lock toot gaya" → Locksmiths
+
+━━━ SERVICE CATEGORIES (use exact strings for the function) ━━━
 - HVAC (Air Conditioning)
 - Electrical Services
 - Plumbing
@@ -119,7 +142,15 @@ SERVICE CATEGORIES (use exact strings for the function):
   /// Reset conversation history.
   void resetHistory() => _history.clear();
 
-  /// POST to Groq with retry on 429.
+  /// Trim history to the last [_maxHistoryTurns] turns (user+assistant pairs = 2 entries each).
+  void _trimHistory() {
+    const maxEntries = _maxHistoryTurns * 2;
+    if (_history.length > maxEntries) {
+      _history.removeRange(0, _history.length - maxEntries);
+    }
+  }
+
+  /// POST to Groq with retry on 429 and a 20-second timeout.
   Future<http.Response> _post(Map<String, dynamic> body) async {
     final key = await _getApiKey();
     if (key.isEmpty) {
@@ -127,14 +158,23 @@ SERVICE CATEGORIES (use exact strings for the function):
     }
     const maxRetries = 3;
     for (var attempt = 0; attempt < maxRetries; attempt++) {
-      final response = await http.post(
-        Uri.parse(_endpoint),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $key',
-        },
-        body: jsonEncode(body),
-      );
+      http.Response response;
+      try {
+        response = await http
+            .post(
+              Uri.parse(_endpoint),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $key',
+              },
+              body: jsonEncode(body),
+            )
+            .timeout(const Duration(seconds: 20));
+      } on Exception catch (e) {
+        debugPrint('Groq request error (attempt $attempt): $e');
+        if (attempt == maxRetries - 1) rethrow;
+        continue;
+      }
       debugPrint('Groq response: ${response.statusCode}');
       if (response.statusCode == 429 && attempt < maxRetries - 1) {
         final waitSecs = (attempt + 1) * 3;
@@ -169,6 +209,7 @@ SERVICE CATEGORIES (use exact strings for the function):
   /// Send a user message. Returns text or function call.
   Future<AIResponse> sendMessage(String userMessage) async {
     _history.add({'role': 'user', 'content': userMessage});
+    _trimHistory();
 
     http.Response response;
     try {
@@ -233,6 +274,7 @@ SERVICE CATEGORIES (use exact strings for the function):
       'tool_call_id': toolCallId,
       'content': contractorDataJson,
     });
+    _trimHistory();
 
     http.Response response;
     try {

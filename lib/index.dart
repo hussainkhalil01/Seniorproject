@@ -1,36 +1,38 @@
 // Export pages
-export '/authentication_pages/sign_in_page/sign_in_page_widget.dart'
+export '/amanbuild/authentication_pages/sign_in_page/sign_in_page_widget.dart'
     show SignInPageWidget;
-export '/authentication_pages/sign_up_page/sign_up_page_widget.dart'
+export '/amanbuild/authentication_pages/sign_up_page/sign_up_page_widget.dart'
     show SignUpPageWidget;
-export '/authentication_pages/forgot_password_page/forgot_password_page_widget.dart'
+export '/amanbuild/authentication_pages/forgot_password_page/forgot_password_page_widget.dart'
     show ForgotPasswordPageWidget;
-export '/pages/home_page/home_page_widget.dart' show HomePageWidget;
-export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;
-export '/pages/my_orders_page/my_orders_page_widget.dart'
+export '/amanbuild/home_pages/home_page/home_page_widget.dart' show HomePageWidget;
+export '/amanbuild/profile_pages/profile_page/profile_page_widget.dart'
+    show ProfilePageWidget;
+export '/amanbuild/orders_pages/orders_page/orders_page_widget.dart'
     show MyOrdersPageWidget;
-export '/pages/chats_page/chats_page_widget.dart' show ChatsPageWidget;
-export '/profilepage/help_support/help_support_widget.dart'
-    show HelpSupportWidget;
-export '/profilepage/privacy_policy/privacy_policy_widget.dart'
-    show PrivacyPolicyWidget;
-export '/profilepage/setting/setting_widget.dart' show SettingWidget;
-export '/profilepage/editprofile/editprofile_widget.dart'
-    show EditprofileWidget;
-export '/profilepage/editname/editname_widget.dart' show EditnameWidget;
-export '/profilepage/editphone/editphone_widget.dart' show EditphoneWidget;
-export '/profilepage/editpassword/editpassword_widget.dart'
-    show EditpasswordWidget;
-export '/chats/message/message_widget.dart' show MessageWidget;
-export '/authentication_pages/email_verify_page/email_verify_page_widget.dart'
+export '/amanbuild/chats_pages/chats_page/chats_page_widget.dart' show ChatsPageWidget;
+export '/amanbuild/profile_pages/help_support_page/help_support_page_widget.dart'
+    show HelpSupportPageWidget;
+export '/amanbuild/profile_pages/privacy_policy_page/privacy_policy_page_widget.dart'
+    show PrivacyPolicyPageWidget;
+export '/amanbuild/profile_pages/settings_page/settings_page_widget.dart'
+    show SettingsPageWidget;
+export '/amanbuild/profile_pages/edit_profile_page/edit_profile_page_widget.dart'
+    show EditProfilePageWidget;
+export '/amanbuild/profile_pages/edit_account_page/edit_account_page_widget.dart'
+    show EditAccountWidget;
+export '/amanbuild/chats_pages/message_page/message_page_widget.dart' show MessagePageWidget;
+export '/amanbuild/authentication_pages/email_verify_page/email_verify_page_widget.dart'
     show EmailVerifyPageWidget;
-export '/pages/contractor_profile_page/contractor_profile_page_widget.dart'
+export '/amanbuild/home_pages/contractor_profile_page/contractor_profile_page_widget.dart'
     show ContractorProfilePageWidget;
-export '/pages/write_review_page/write_review_page_widget.dart'
+export '/amanbuild/orders_pages/write_review_page/write_review_page_widget.dart'
     show WriteReviewPageWidget;
-export '/pages/contractors_map_page/contractors_map_page_widget.dart'
+export '/amanbuild/home_pages/contractors_map_page/contractors_map_page_widget.dart'
     show ContractorsMapPageWidget;
-export '/pages/ai_chat_page/ai_chat_page_widget.dart'
+export '/amanbuild/chats_pages/ai_chat_page/ai_chat_page_widget.dart'
     show AiChatPageWidget;
-export '/pages/admin/admin_dashboard_page.dart'
+export '/amanbuild/admin_pages/admin_dashboard_page/admin_dashboard_page.dart'
     show AdminDashboardPage;
+
+

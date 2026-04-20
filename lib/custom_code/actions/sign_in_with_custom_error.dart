@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 
 // Libraries:
 import 'package:firebase_auth/firebase_auth.dart';
-import '/pages/home_page/home_page_widget.dart';
+import '/amanbuild/home_pages/home_page/home_page_widget.dart';
 
 Future<String> signInWithCustomError(
   BuildContext context,
@@ -43,3 +43,4 @@ Future<String> signInWithCustomError(
     return 'Something went wrong. Please try again';
   }
 }
+

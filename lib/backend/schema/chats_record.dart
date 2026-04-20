@@ -150,6 +150,7 @@ Map<String, dynamic> createChatsRecordData({
   String? userAPhoto,
   String? userBPhoto,
   String? chatKey,
+
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -164,6 +165,7 @@ Map<String, dynamic> createChatsRecordData({
       'user_a_photo': userAPhoto,
       'user_b_photo': userBPhoto,
       'chat_key': chatKey,
+
     }.withoutNulls,
   );
 

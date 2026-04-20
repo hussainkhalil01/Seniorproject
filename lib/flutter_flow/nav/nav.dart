@@ -1,15 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import '/auth/base_auth_user_provider.dart';
 
 import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import 'serialization_util.dart';
 
 import '/index.dart';
 
@@ -79,13 +76,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       refreshListenable: appStateNotifier,
       navigatorKey: appNavigatorKey,
       errorBuilder: (context, state) =>
-          appStateNotifier.loggedIn ? NavBarPage() : const SignInPageWidget(),
+          appStateNotifier.loggedIn ? const NavBarPage() : const SignInPageWidget(),
       routes: [
         FFRoute(
           name: '_initialize',
           path: '/',
           builder: (context, _) =>
-              appStateNotifier.loggedIn ? NavBarPage() : const SignInPageWidget(),
+              appStateNotifier.loggedIn ? const NavBarPage() : const SignInPageWidget(),
         ),
         FFRoute(
           name: SignInPageWidget.routeName,
@@ -107,7 +104,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: HomePageWidget.routePath,
           requireAuth: true,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'HomePage')
+              ? const NavBarPage(initialPage: 'HomePage')
               : const HomePageWidget(),
         ),
         FFRoute(
@@ -115,7 +112,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: ProfilePageWidget.routePath,
           requireAuth: true,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'ProfilePage')
+              ? const NavBarPage(initialPage: 'ProfilePage')
               : const ProfilePageWidget(),
         ),
         FFRoute(
@@ -123,7 +120,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: MyOrdersPageWidget.routePath,
           requireAuth: true,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'MyOrdersPage')
+              ? const NavBarPage(initialPage: 'MyOrdersPage')
               : const MyOrdersPageWidget(),
         ),
         FFRoute(
@@ -131,56 +128,44 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: ChatsPageWidget.routePath,
           requireAuth: true,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'ChatsPage')
+              ? const NavBarPage(initialPage: 'ChatsPage')
               : const ChatsPageWidget(),
         ),
         FFRoute(
-          name: HelpSupportWidget.routeName,
-          path: HelpSupportWidget.routePath,
+          name: HelpSupportPageWidget.routeName,
+          path: HelpSupportPageWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => const HelpSupportWidget(),
+          builder: (context, params) => const HelpSupportPageWidget(),
         ),
         FFRoute(
-          name: PrivacyPolicyWidget.routeName,
-          path: PrivacyPolicyWidget.routePath,
+          name: PrivacyPolicyPageWidget.routeName,
+          path: PrivacyPolicyPageWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => const PrivacyPolicyWidget(),
+          builder: (context, params) => const PrivacyPolicyPageWidget(),
         ),
         FFRoute(
-          name: SettingWidget.routeName,
-          path: SettingWidget.routePath,
+          name: SettingsPageWidget.routeName,
+          path: SettingsPageWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => const SettingWidget(),
+          builder: (context, params) => const SettingsPageWidget(),
         ),
         FFRoute(
-          name: EditprofileWidget.routeName,
-          path: EditprofileWidget.routePath,
+          name: EditProfilePageWidget.routeName,
+          path: EditProfilePageWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => const EditprofileWidget(),
+          builder: (context, params) => const EditProfilePageWidget(),
         ),
         FFRoute(
-          name: EditnameWidget.routeName,
-          path: EditnameWidget.routePath,
+          name: EditAccountWidget.routeName,
+          path: EditAccountWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => const EditnameWidget(),
+          builder: (context, params) => const EditAccountWidget(),
         ),
         FFRoute(
-          name: EditphoneWidget.routeName,
-          path: EditphoneWidget.routePath,
+          name: MessagePageWidget.routeName,
+          path: MessagePageWidget.routePath,
           requireAuth: true,
-          builder: (context, params) => const EditphoneWidget(),
-        ),
-        FFRoute(
-          name: EditpasswordWidget.routeName,
-          path: EditpasswordWidget.routePath,
-          requireAuth: true,
-          builder: (context, params) => const EditpasswordWidget(),
-        ),
-        FFRoute(
-          name: MessageWidget.routeName,
-          path: MessageWidget.routePath,
-          requireAuth: true,
-          builder: (context, params) => MessageWidget(
+          builder: (context, params) => MessagePageWidget(
             chatRef: params.getParam(
               'chatRef',
               ParamType.DocumentReference,
@@ -475,7 +460,7 @@ class TransitionInfo {
   const TransitionInfo({
     required this.hasTransition,
     this.transitionType = PageTransitionType.fade,
-    this.duration = const Duration(milliseconds: 300),
+    this.duration = const Duration(milliseconds: 150),
     this.alignment,
   });
 
@@ -484,7 +469,7 @@ class TransitionInfo {
   final Duration duration;
   final Alignment? alignment;
 
-  static TransitionInfo appDefault() => const TransitionInfo(hasTransition: false);
+  static TransitionInfo appDefault() => const TransitionInfo(hasTransition: true);
 }
 
 class RootPageContext {

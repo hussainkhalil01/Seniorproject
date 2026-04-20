@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 
 // Libraries:
 import 'package:firebase_auth/firebase_auth.dart';
-import '/pages/home_page/home_page_widget.dart';
+import '/amanbuild/home_pages/home_page/home_page_widget.dart';
 
 Future<String> emailVerifyContinue(BuildContext context) async {
   try {
@@ -36,3 +36,4 @@ Future<String> emailVerifyContinue(BuildContext context) async {
     return 'Something went wrong. Please try again';
   }
 }
+

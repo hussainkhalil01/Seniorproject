@@ -30,8 +30,6 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  flutter_web_plugins:
-    sdk: flutter
   auto_size_text: 3.0.0
   audioplayers: ^6.4.0
   cached_network_image: 3.4.1
@@ -42,6 +40,7 @@ dependencies:
   cloud_firestore_web: 4.4.9
   collection: 1.19.1
   cross_file: 0.3.5+1
+  crypto: ^3.0.6
   csslib: 1.0.2
   easy_debounce: 2.0.1
   equatable: 2.0.7
@@ -137,6 +136,7 @@ dependencies:
   latlong2: ^0.9.1
   geolocator: ^13.0.2
 
+  http_parser: any
 dependency_overrides:
   http: 1.4.0
   uuid: ^4.0.0
@@ -153,11 +153,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: 'launcher_icon'
   ios: true
-  web:
-    generate: true
-  image_path: 'assets/images/trusted-contractors-marketplace-icon-tr.png.png'
+  image_path: 'assets/images/trusted-contractors-marketplace-icon-tr.png'
   adaptive_icon_background: '#FFFFFF'
-  adaptive_icon_foreground: 'assets/images/trusted-contractors-marketplace-icon-tr.png.png'
+  adaptive_icon_foreground: 'assets/images/trusted-contractors-marketplace-icon-tr.png'
 
 
 # For information on the generic Dart part of this file, see the
