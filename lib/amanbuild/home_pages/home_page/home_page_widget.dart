@@ -281,7 +281,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Hello, ${_preferredDisplayName()} ??',
+                                    'Hello, ${_preferredDisplayName()} 👋',
                                     style: GoogleFonts.ubuntu(
                                       color: const Color(0xE6FFFFFF),
                                       fontSize: 14,

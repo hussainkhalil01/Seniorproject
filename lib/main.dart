@@ -247,93 +247,104 @@ class _NavBarPageState extends State<NavBarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = currentUserDocument?.role == 'admin';
-    final tabs = {
-      'HomePage': const HomePageWidget(),
-      'ChatsPage': const ChatsPageWidget(),
-      if (isAdmin)
-        'AdminDashboard': const AdminDashboardPage()
-      else
-        'MyOrdersPage': const MyOrdersPageWidget(),
-      'ProfilePage': const ProfilePageWidget(),
-    };
-    if (!tabs.containsKey(_currentPageName)) {
-      _currentPageName = tabs.keys.first;
-    }
-    final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
-
     return AuthUserStreamWidget(
-      builder: (context) => Scaffold(
-        resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
-        body: _currentPage ?? tabs[_currentPageName],
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: currentIndex >= 0 ? currentIndex : 0,
-          onTap: (i) => safeSetState(() {
-            _currentPage = null;
-            _currentPageName = tabs.keys.toList()[i];
-          }),
-          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-          selectedItemColor: FlutterFlowTheme.of(context).secondary,
-          unselectedItemColor: FlutterFlowTheme.of(context).secondaryText,
-          selectedLabelStyle: GoogleFonts.ubuntu(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-          unselectedLabelStyle: GoogleFonts.ubuntu(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-          type: BottomNavigationBarType.fixed,
-          items: <BottomNavigationBarItem>[
-            const BottomNavigationBarItem(
-              icon: Icon(
-                Icons.home_rounded,
-                size: 24.0,
-              ),
-              label: 'Home',
-              tooltip: '',
+      builder: (context) {
+        final isAdmin = currentUserDocument?.role == 'admin';
+        final tabs = <String, Widget>{
+          'HomePage': const HomePageWidget(),
+          'ChatsPage': const ChatsPageWidget(),
+          if (isAdmin)
+            'AdminDashboard': const AdminDashboardPage()
+          else
+            'MyOrdersPage': const MyOrdersPageWidget(),
+          'ProfilePage': const ProfilePageWidget(),
+        };
+        final tabNames = tabs.keys.toList();
+
+        var effectivePageName = _currentPageName;
+        if (!tabs.containsKey(effectivePageName)) {
+          if (isAdmin && effectivePageName == 'MyOrdersPage') {
+            effectivePageName = 'AdminDashboard';
+          } else if (!isAdmin && effectivePageName == 'AdminDashboard') {
+            effectivePageName = 'MyOrdersPage';
+          } else {
+            effectivePageName = tabNames.first;
+          }
+        }
+        final currentIndex = tabNames.indexOf(effectivePageName);
+
+        return Scaffold(
+          resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
+          body: _currentPage ?? tabs[effectivePageName],
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: currentIndex >= 0 ? currentIndex : 0,
+            onTap: (i) => safeSetState(() {
+              _currentPage = null;
+              _currentPageName = tabNames[i];
+            }),
+            backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+            selectedItemColor: FlutterFlowTheme.of(context).secondary,
+            unselectedItemColor: FlutterFlowTheme.of(context).secondaryText,
+            selectedLabelStyle: GoogleFonts.ubuntu(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(
-                Icons.chat_rounded,
-                size: 24.0,
-              ),
-              label: 'Chats',
-              tooltip: '',
+            unselectedLabelStyle: GoogleFonts.ubuntu(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
-            if (isAdmin)
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            type: BottomNavigationBarType.fixed,
+            items: <BottomNavigationBarItem>[
               const BottomNavigationBarItem(
                 icon: Icon(
-                  Icons.dashboard_rounded,
+                  Icons.home_rounded,
                   size: 24.0,
                 ),
-                label: 'Dashboard',
+                label: 'Home',
+                tooltip: '',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.chat_rounded,
+                  size: 24.0,
+                ),
+                label: 'Chats',
+                tooltip: '',
+              ),
+              if (isAdmin)
+                const BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.dashboard_rounded,
+                    size: 24.0,
+                  ),
+                  label: 'Dashboard',
+                  tooltip: '',
+                )
+              else
+                BottomNavigationBarItem(
+                  icon: const Icon(
+                    Icons.receipt_long_rounded,
+                    size: 24.0,
+                  ),
+                  label: currentUserDocument?.role == 'service_provider'
+                      ? 'Orders'
+                      : 'My Orders',
+                  tooltip: '',
+                ),
+              const BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.person_rounded,
+                  size: 24.0,
+                ),
+                label: 'Profile',
                 tooltip: '',
               )
-            else
-              BottomNavigationBarItem(
-                icon: const Icon(
-                  Icons.receipt_long_rounded,
-                  size: 24.0,
-                ),
-                label: currentUserDocument?.role == 'service_provider'
-                    ? 'Orders'
-                    : 'My Orders',
-                tooltip: '',
-              ),
-            const BottomNavigationBarItem(
-              icon: Icon(
-                Icons.person_rounded,
-                size: 24.0,
-              ),
-              label: 'Profile',
-              tooltip: '',
-            )
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

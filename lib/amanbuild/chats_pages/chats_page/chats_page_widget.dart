@@ -656,6 +656,8 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                           ),
                         );
                       }
+                      final showAiAssistant =
+                          currentUserDocument?.role != 'service_provider';
                       final chats = snapshot.data!
                           .where((c) =>
                               (currentUserReference == c.userA ||
@@ -673,34 +675,36 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
-                              child: _AiAssistantTile(),
-                            ),
-                            Divider(
-                              height: 1,
-                              thickness: 1,
-                              color: FlutterFlowTheme.of(context)
-                                  .alternate
-                                  .withValues(alpha: 0.5),
-                            ),
-                             Expanded(
+                            if (showAiAssistant) ...[
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 20),
+                                child: _AiAssistantTile(),
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: FlutterFlowTheme.of(context)
+                                    .alternate
+                                    .withValues(alpha: 0.5),
+                              ),
+                            ],
+                            Expanded(
                               child: _buildEmptyPlaceholder(context),
-                             ),
-                           ],
-                         );
+                            ),
+                          ],
+                        );
                       }
 
                       final now = DateTime.now();
                       return ListView.builder(
                         controller: _model.columnController,
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: chats.length + 2,
+                        itemCount: chats.length + (showAiAssistant ? 2 : 0),
                         itemBuilder: (context, index) {
-                          if (index == 0) {
+                          if (showAiAssistant && index == 0) {
                             return const _AiAssistantTile();
                           }
-                          if (index == 1) {
+                          if (showAiAssistant && index == 1) {
                             return Divider(
                               height: 1,
                               thickness: 1,
@@ -709,7 +713,7 @@ class _ChatsPageWidgetState extends State<ChatsPageWidget> {
                                   .withValues(alpha: 0.5),
                             );
                           }
-                          final chat = chats[index - 2];
+                          final chat = chats[index - (showAiAssistant ? 2 : 0)];
                           final isUserA =
                               currentUserReference == chat.userA;
                           final otherName =
