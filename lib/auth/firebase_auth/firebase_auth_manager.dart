@@ -50,8 +50,15 @@ class FirebaseAuthManager extends AuthManager
   FirebasePhoneAuthManager phoneAuthManager = FirebasePhoneAuthManager();
 
   @override
-  Future signOut() {
-    return FirebaseAuth.instance.signOut();
+  Future signOut() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'is_online': false,
+        'last_active_time': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)).catchError((_) => null);
+    }
+    await FirebaseAuth.instance.signOut();
   }
 
   @override
