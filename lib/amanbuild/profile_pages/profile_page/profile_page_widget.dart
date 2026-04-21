@@ -389,7 +389,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                                         image: NetworkImage(
                                           currentUserPhoto.isNotEmpty
                                               ? '$currentUserPhoto?v=$_photoVersion'
-                                              : 'https://storage.googleapis.com/flutterflow-io-6f20.appspot.com/projects/aman-build-0tehsj/assets/qvuky4xvjia3/user.png',
+                                              : 'https://res.cloudinary.com/dxjzonvxd/image/upload/v1774901264/user-icon.png',
                                         ),
                                       ),
                                     ),

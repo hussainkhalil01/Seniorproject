@@ -420,9 +420,12 @@ class FFRoute {
           final child = appStateNotifier.loading
               ? Container(
                   color: FlutterFlowTheme.of(context).primaryBackground,
-                  child: Image.asset(
-                    'assets/images/splash.png',
-                    fit: BoxFit.contain,
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/trusted-contractors-marketplace-logo-tr.png',
+                      fit: BoxFit.contain,
+                      width: 240,
+                    ),
                   ),
                 )
               : page;
